@@ -87,7 +87,7 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
     _burn(tokenId);
   }
 
-  /// @notice override function for the baseURI
+  /// @notice to set the BaseURI value
   function _baseURI() internal view override returns (string memory) {
     return baseURI;
   }
