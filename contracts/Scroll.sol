@@ -5,18 +5,14 @@
 pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import "./interface/IScroll.sol";
 
-contract ERC721Scroll is ERC721Enumerable, AccessControl {
+contract ERC721Scroll is IScroll, ERC721Enumerable, AccessControl, Ownable {
   bytes32 public constant MINT = keccak256("MINT");
   bytes32 public constant OWNER = keccak256("OWNER");
 
   string baseURI = "";
-
-  struct Scroll {
-    uint256 age;
-    uint256 aesthetic;
-    uint256 guildId;
-  }
 
   mapping(address => mapping(uint256 => Scroll)) private UserScroll;
 

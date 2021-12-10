@@ -5,10 +5,11 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-contract Keys is ERC721Enumerable, AccessControl {
+contract Keys is ERC721Enumerable, AccessControl, Ownable {
   using Address for address;
   using Strings for uint256;
 
@@ -72,7 +73,8 @@ contract Keys is ERC721Enumerable, AccessControl {
     count++;
   }
 
-  function burnKeyOfUser(address user) public onlyRole(BURN) {
-    _safeMint(user, count);
+  function burnKeyOfUser(uint256 tokenId, address user) public onlyRole(BURN) {
+    require(ownerOf(tokenId) == user, "Not the owner of the NFT");
+    _burn(tokenId);
   }
 }
