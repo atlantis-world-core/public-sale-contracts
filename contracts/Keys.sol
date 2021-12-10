@@ -21,9 +21,9 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
   /**
    * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
    */
-  constructor(address mint, address burn) ERC721("Keys", "Key") {
-    grantRole(MINT, mint);
-    grantRole(BURN, burn);
+  constructor(address saleContract) ERC721("Keys", "Key") {
+    grantRole(MINT, saleContract);
+    grantRole(BURN, saleContract);
   }
 
   /**

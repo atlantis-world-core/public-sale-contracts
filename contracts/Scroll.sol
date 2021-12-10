@@ -3,22 +3,28 @@
 // rarity -> 1% elder scrolls, special aesthtic, secret future perks, associate guilds => single struct
 
 pragma solidity ^0.8.4;
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721Enumerableupgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interface/IScroll.sol";
 
-contract ERC721Scroll is IScroll, ERC721Enumerable, AccessControl, Ownable {
+contract ERC721Scroll is
+  IScroll,
+  ERC721EnumerableUpgradeable,
+  AccessControlUpgradeable,
+  OwnableUpgradeable
+{
   bytes32 public constant MINT = keccak256("MINT");
-  bytes32 public constant OWNER = keccak256("OWNER");
 
   string baseURI = "";
 
   mapping(address => mapping(uint256 => Scroll)) private UserScroll;
 
-  constructor(address owner, address mintContract) ERC721("Scroll", "SCR") {
+  function initialize(address mintContract) public initializer {
     grantRole(MINT, mintContract);
-    grantRole(OWNER, owner);
+    __ERC721_init("Scroll", "SCR");
   }
 
   function mint(address user, uint256 tokenId) public onlyRole(MINT) {
@@ -44,12 +50,12 @@ contract ERC721Scroll is IScroll, ERC721Enumerable, AccessControl, Ownable {
   function supportsInterface(bytes4 interfaceId)
     public
     view
-    override(ERC721Enumerable, AccessControl)
+    override(ERC721EnumerableUpgradeable, AccessControlUpgradeable)
     returns (bool)
   {
     return
-      interfaceId == type(IERC721).interfaceId ||
-      interfaceId == type(IERC721Metadata).interfaceId ||
+      interfaceId == type(IERC721Upgradeable).interfaceId ||
+      interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
       super.supportsInterface(interfaceId);
   }
 }
