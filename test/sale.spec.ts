@@ -13,7 +13,7 @@ function toUnixTimestamp(date: string): BigNumber {
 
 describe("Sale", () => {
   let contract: Sale;
-  const whiteListMerkleRoot = getWhitelistMerkleRoot();
+  const whitelistMerkleRoot = getWhitelistMerkleRoot();
   const advisorMerkleRoot = getAdvisorMerkleRoot();
   const startSaleBlockTimestamp = toUnixTimestamp("2021-12-31");
   const stopSaleBlockTimestamp = toUnixTimestamp("2022-01-31");
@@ -22,14 +22,14 @@ describe("Sale", () => {
     const SaleContract = await ethers.getContractFactory("Sale");
 
     console.log("beforeEach", {
-      whiteListMerkleRoot,
+      whitelistMerkleRoot,
       advisorMerkleRoot,
       startSaleBlockTimestamp,
       stopSaleBlockTimestamp,
     });
 
     contract = await SaleContract.deploy(
-      whiteListMerkleRoot,
+      whitelistMerkleRoot,
       advisorMerkleRoot,
       startSaleBlockTimestamp,
       stopSaleBlockTimestamp

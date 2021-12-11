@@ -12,7 +12,7 @@ import {IScroll} from "./interface/IScroll.sol";
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
 contract Sale is Ownable {
     /// @notice All the merkle roots - whitelist address and advisor addresses
-    bytes32 private whiteListMerkleRoot;
+    bytes32 private whitelistMerkleRoot;
     bytes32 private advisorMerkleRoot;
 
     uint256 public mintPrice = 0.2 ether;
@@ -26,22 +26,34 @@ contract Sale is Ownable {
     IKeys internal keys;
     IScroll internal scroll;
 
-    /// @param _whiteListMerkleRoot The merkle root of whitelisted candidates
+    /// @param _whitelistMerkleRoot The merkle root of whitelisted candidates
     /// @param _advisorMerkleRoot The merkle root of advisor addresses
     /// @param _startSaleBlockTimestamp The start sale timestamp
     /// @param _stopSaleBlockTimestamp The stop sale timestamp
     constructor(
-        bytes32 _whiteListMerkleRoot,
+        bytes32 _whitelistMerkleRoot,
         bytes32 _advisorMerkleRoot,
         uint256 _startSaleBlockTimestamp,
         uint256 _stopSaleBlockTimestamp
     ) {
-        whiteListMerkleRoot = _whiteListMerkleRoot;
+        whitelistMerkleRoot = _whitelistMerkleRoot;
         advisorMerkleRoot = _advisorMerkleRoot;
 
         startSaleBlockTimestamp = _startSaleBlockTimestamp;
         stopSaleBlockTimestamp = _stopSaleBlockTimestamp;
     }
+
+    event PreMinted(address sender);
+
+    event BuyKeyFromSale(address sender);
+
+    event BuyPostSale(address sender);
+
+    event SellKeyForScroll(address sender, uint256 tokenId);
+
+    event NewWhitelistMerkleRoot(bytes32 merkleRoot);
+
+    event NewAdvisorMerkleRoot(bytes32 merkleRoot);
 
     modifier isSaleOngoing() {
         require(
@@ -82,11 +94,13 @@ contract Sale is Ownable {
             ),
             "not in the advisory list"
         );
+
         keys.mintKeyToUser(msg.sender);
+        emit PreMinted(msg.sender);
     }
 
     /// @notice For buying during the public sale, for addresses whitelisted for the sale
-    /// @param _proof The merkle proof for the whiteListMerkleRoot
+    /// @param _proof The merkle proof for the `whitelistMerkleRoot`
     function buyKeyFromSale(bytes32[] calldata _proof)
         external
         payable
@@ -95,7 +109,7 @@ contract Sale is Ownable {
         require(
             MerkleProof.verify(
                 _proof,
-                whiteListMerkleRoot,
+                whitelistMerkleRoot,
                 generateLeaf(msg.sender)
             ),
             "Not Eligible"
@@ -103,26 +117,31 @@ contract Sale is Ownable {
         require(msg.value >= mintPrice, "Insufficient payment");
 
         keys.mintKeyToUser(msg.sender);
+        emit BuyKeyFromSale(msg.sender);
     }
 
     /// @notice For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6969 keys
     function buyPostSale() public payable hasSaleEnded {
         require(msg.value >= mintPrice, "Insufficient payment");
+
         keys.mintKeyToUser(msg.sender);
+        emit BuyPostSale(msg.sender);
     }
 
     /// @notice To swap the key for scroll on reveal
     function sellKeyForScroll(uint256 _tokenId) external canKeySwapped {
         keys.burnKeyOfUser(_tokenId, msg.sender);
         scroll.mint(msg.sender, _tokenId);
+        emit SellKeyForScroll(msg.sender, _tokenId);
     }
 
     // *************
     // SET FUNCTIONS
     // *************
 
-    function setWhiteListMerkleRoot(bytes32 _newWhiteList) external onlyOwner {
-        whiteListMerkleRoot = _newWhiteList;
+    function setWhitelistMerkleRoot(bytes32 _newWhiteList) external onlyOwner {
+        whitelistMerkleRoot = _newWhiteList;
+        emit NewWhitelistMerkleRoot(_newWhiteList);
     }
 
     function setAdvisorMerkleRoot(bytes32 _advisorMerkleRoot)
@@ -130,6 +149,7 @@ contract Sale is Ownable {
         onlyOwner
     {
         advisorMerkleRoot = _advisorMerkleRoot;
+        emit NewAdvisorMerkleRoot(_advisorMerkleRoot);
     }
 
     /// @param _keys Key contract address
