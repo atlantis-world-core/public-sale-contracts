@@ -1,6 +1,7 @@
 {
   "name": "hardhat-project",
   "scripts": {
+    "postinstall": "yarn compile",
     "deploy": "hardhat run scripts/deploy.ts --network localhost",
     "start": "hardhat node",
     "compile": "hardhat compile",
