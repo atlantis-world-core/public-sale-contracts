@@ -2,34 +2,34 @@ import { ADVISOR_WHITELISTED_USERS, WHITELISTED_USERS } from "./whitelist";
 import { MerkleTree } from "merkletreejs";
 import keccak256 from "keccak256";
 
-const whitelistLeaves = WHITELISTED_USERS.map((x) => keccak256(x));
-const advisorLeaves = ADVISOR_WHITELISTED_USERS.map((x) => keccak256(x));
-const whitelistTree = new MerkleTree(whitelistLeaves, keccak256);
-const advisorTree = new MerkleTree(advisorLeaves, keccak256);
+const WHITELIST_LEAVES = WHITELISTED_USERS.map((x) => keccak256(x));
+const ADVISOR_LEAVES = ADVISOR_WHITELISTED_USERS.map((x) => keccak256(x));
 
-const getWhitelistMerkleRoot = () => {
-  return "0x" + whitelistTree.getRoot().toString("hex");
+const whitelistMerkleTree = new MerkleTree(WHITELIST_LEAVES, keccak256);
+const advisorMerkleTree = new MerkleTree(ADVISOR_LEAVES, keccak256);
+
+const generateMerkleRoot = (tree: MerkleTree) => {
+  const hex = tree.getHexRoot();
+
+  return hex;
 };
 
-const getWhitelistMerkleProof = (leaf: string) => {
-  return whitelistTree.getProof(leaf);
+const whitelistMerkleRoot = generateMerkleRoot(whitelistMerkleTree);
+const advisorMerkleRoot = generateMerkleRoot(advisorMerkleTree);
+
+const generateWhitelistMerkleProof = (leaf: string, index: number) => {
+  return whitelistMerkleTree.getHexProof(leaf, index);
 };
 
-const getAdvisorMerkleRoot = () => {
-  return "0x" + advisorTree.getRoot().toString("hex");
-};
-
-const getAdvisorMerkleProof = (leaf: string) => {
-  return advisorTree.getProof(leaf);
+const generateAdvisorMerkleProof = (leaf: string, index: number) => {
+  return advisorMerkleTree.getHexProof(leaf, index);
 };
 
 export {
-  getWhitelistMerkleRoot,
-  getWhitelistMerkleProof,
-  getAdvisorMerkleRoot,
-  getAdvisorMerkleProof,
-  whitelistLeaves,
-  advisorLeaves,
-  whitelistTree,
-  advisorTree,
+  WHITELIST_LEAVES,
+  ADVISOR_LEAVES,
+  whitelistMerkleRoot,
+  advisorMerkleRoot,
+  generateWhitelistMerkleProof,
+  generateAdvisorMerkleProof,
 };
