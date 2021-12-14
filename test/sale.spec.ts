@@ -2,65 +2,65 @@ import { useMerkleHelper } from "../helpers/merkle";
 import { fromUnixTimestamp, toUnixTimestamp } from "../helpers/time";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Sale } from "../typechain";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import MerkleTree from "merkletreejs";
+import {
+  ADVISOR_WHITELISTED_USERS,
+  WHITELISTED_USERS,
+} from "../helpers/whitelist";
+import { BigNumber } from "@ethersproject/bignumber";
 
-/**
- * @todo
- * The timestamps should not be relative, should be replaced with a
- * library where you can add days, weeks, months, and years. Where
- * it's not going to be relative to the current timestamp when the
- * test is being executed. Otherwise tests would fail at some time.
- */
-describe("Sale", () => {
+type SetupArgs = {
+  saleStart?: BigNumber;
+  saleStop?: BigNumber;
+};
+
+async function setup(args?: SetupArgs) {
+  const { saleStart, saleStop } = args ?? {};
   const merkleHelper = useMerkleHelper();
-  let whitelistLeaves: string[] = [];
-  let advisorLeaves: string[];
-  let whitelistMerkleTree: MerkleTree;
-  let advisorMerkleTree: MerkleTree;
-  let whitelistMerkleRoot: string;
-  let advisorMerkleRoot: string;
-  let signers: SignerWithAddress[];
-  let contract: Sale;
-  let startSaleBlockTimestamp = toUnixTimestamp("2021-12-31");
-  let stopSaleBlockTimestamp = toUnixTimestamp("2022-01-31");
 
-  async function deploy() {
-    // signers
-    const _signers = await ethers.getSigners();
-    const [owner, minter] = _signers;
-    signers = [owner, minter];
+  // signers
+  const signers = await ethers.getSigners();
+  // const _signers = new MockProvider().getWallets()
+  const [owner, minter] = signers;
 
-    // leaves
-    whitelistLeaves = _signers.map((signer) => signer.address).splice(0, 8);
-    advisorLeaves = _signers.map((signer) => signer.address).splice(8, 8);
-    console.log("leaves", {
-      whitelistLeaves: whitelistLeaves.length,
-      advisorLeaves: advisorLeaves.length,
-    });
+  // leaves
+  const useEtherSigners = true;
+  const leafZeroPad = (leaf: string) => ethers.utils.hexZeroPad(leaf, 32);
+  const whitelistLeaves = (
+    useEtherSigners
+      ? signers.map((signer) => signer.address).splice(0, 8)
+      : WHITELISTED_USERS
+  ).map(leafZeroPad);
+  const advisorLeaves = (
+    useEtherSigners
+      ? signers.map((signer) => signer.address).splice(8, 8)
+      : ADVISOR_WHITELISTED_USERS
+  ).map(leafZeroPad);
 
-    // merkle trees
-    whitelistMerkleTree = merkleHelper.createMerkleTree(whitelistLeaves);
-    advisorMerkleTree = merkleHelper.createMerkleTree(advisorLeaves);
+  // merkle trees
+  const whitelistMerkleTree = merkleHelper.createMerkleTree(whitelistLeaves);
+  const advisorMerkleTree = merkleHelper.createMerkleTree(advisorLeaves);
 
-    // merkle roots
-    whitelistMerkleRoot = merkleHelper.createMerkleRoot(whitelistMerkleTree);
-    advisorMerkleRoot = merkleHelper.createMerkleRoot(advisorMerkleTree);
+  // merkle roots
+  const whitelistMerkleRoot =
+    merkleHelper.createMerkleRoot(whitelistMerkleTree);
+  const advisorMerkleRoot = merkleHelper.createMerkleRoot(advisorMerkleTree);
 
-    // smart contract deployment
-    const SaleContract = await ethers.getContractFactory("Sale", {
-      signer: owner,
-    });
-    contract = await SaleContract.deploy(
-      whitelistMerkleRoot,
-      advisorMerkleRoot,
-      startSaleBlockTimestamp,
-      stopSaleBlockTimestamp
-    );
+  // sale timestamps
+  const startSaleBlockTimestamp = saleStart ?? toUnixTimestamp("2021-12-31");
+  const stopSaleBlockTimestamp = saleStop ?? toUnixTimestamp("2022-01-31");
 
-    await contract.deployed();
-  }
+  // smart contract deployment
+  const SaleContract = await ethers.getContractFactory("Sale", {
+    signer: owner,
+  });
+  const contract = await SaleContract.deploy(
+    whitelistMerkleRoot,
+    advisorMerkleRoot,
+    startSaleBlockTimestamp,
+    stopSaleBlockTimestamp
+  );
+
+  await contract.deployed();
 
   /**
    * @description
@@ -84,12 +84,41 @@ describe("Sale", () => {
     });
   }
 
-  beforeEach(deploy);
+  return {
+    contract,
+    owner,
+    minter,
+    whitelistMerkleTree,
+    advisorMerkleTree,
+    whitelistMerkleRoot,
+    advisorMerkleRoot,
+    whitelistLeaves,
+    advisorLeaves,
+    startSaleBlockTimestamp,
+    stopSaleBlockTimestamp,
+    logTimestamps,
+  };
+}
+
+/**
+ * @todo
+ * The timestamps should not be relative, should be replaced with a
+ * library where you can add days, weeks, months, and years. Where
+ * it's not going to be relative to the current timestamp when the
+ * test is being executed. Otherwise tests would fail at some time.
+ */
+describe("Sale", () => {
+  const merkleHelper = useMerkleHelper();
 
   describe("property: mintPrice", () => {
     it("SHOULD return 0.2 ether, WHEN called", async () => {
+      // arrange
+      const { contract } = await setup();
+
+      // act
       const mintPrice = await contract.mintPrice();
 
+      // assert
       expect(ethers.utils.formatEther(mintPrice)).to.be.equal("0.2");
     });
   });
@@ -97,18 +126,17 @@ describe("Sale", () => {
   describe("modifier: isSaleOngoing", () => {
     it(`SHOULD revert with "Sale is over", WHEN GIVEN a valid merkle proof AND the sale timeframe is from the past`, async () => {
       // arrange
-      startSaleBlockTimestamp = toUnixTimestamp("2020-12-31");
-      stopSaleBlockTimestamp = toUnixTimestamp("2021-01-31");
-      await deploy();
-      await logTimestamps();
+      const startSaleBlockTimestamp = toUnixTimestamp("2020-12-31");
+      const stopSaleBlockTimestamp = toUnixTimestamp("2021-01-31");
+      const { contract, whitelistLeaves, whitelistMerkleTree } = await setup({
+        saleStart: startSaleBlockTimestamp,
+        saleStop: stopSaleBlockTimestamp,
+      });
 
       // act
       const [leaf] = whitelistLeaves;
-      const proof = merkleHelper.createMerkleProof(
-        whitelistMerkleTree,
-        leaf,
-        0
-      );
+      const proof = merkleHelper.createMerkleProof(whitelistMerkleTree, leaf);
+      console.log(whitelistLeaves.length, proof);
 
       // assert
       await expect(contract.buyKeyFromSale(proof)).to.be.reverted;
@@ -119,10 +147,8 @@ describe("Sale", () => {
 
     it(`SHOULD NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
       // arrange
-      startSaleBlockTimestamp = toUnixTimestamp("2021-12-01");
-      stopSaleBlockTimestamp = toUnixTimestamp("2022-01-31");
-      await deploy();
-      await logTimestamps();
+      const { contract, minter, whitelistLeaves, whitelistMerkleTree } =
+        await setup();
 
       // act
       const [leaf] = whitelistLeaves;
@@ -132,11 +158,11 @@ describe("Sale", () => {
         0
       );
       const ether = ethers.utils.parseEther("0.2");
+      contract.connect(minter);
 
       // assert
       await expect(
         contract.buyKeyFromSale(proof, {
-          // from: minter.address,
           value: ether,
         })
       ).to.be.revertedWith("hey");

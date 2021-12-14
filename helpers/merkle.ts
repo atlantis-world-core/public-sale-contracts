@@ -1,10 +1,15 @@
 // import { ADVISOR_WHITELISTED_USERS, WHITELISTED_USERS } from "./whitelist";
 import { MerkleTree } from "merkletreejs";
+import { ethers } from "hardhat";
 import keccak256 from "keccak256";
 
 export const useMerkleHelper = () => {
   const createMerkleTree = (leaves: string[]): MerkleTree => {
-    return new MerkleTree(leaves, keccak256);
+    leaves = leaves.map((leaf) =>
+      ethers.utils.solidityKeccak256(["address"], [leaf])
+    );
+
+    return new MerkleTree(leaves, keccak256, { sort: true });
   };
 
   const createMerkleProof = (
