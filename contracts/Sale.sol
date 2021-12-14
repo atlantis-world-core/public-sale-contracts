@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IKeys} from "./interface/IKeys.sol";
 import {IScroll} from "./interface/IScroll.sol";
+import "hardhat/console.sol";
 
 /// @title A controller for the entire club sale
 /// @author Rachit Anand Srivastava
@@ -16,7 +17,7 @@ contract Sale is Ownable {
     bytes32 private advisorMerkleRoot;
 
     uint256 public mintPrice = 0.2 ether;
-
+    
     /// @notice Timestamps
     uint256 public startSaleBlockTimestamp;
     uint256 public stopSaleBlockTimestamp;
@@ -41,6 +42,8 @@ contract Sale is Ownable {
 
         startSaleBlockTimestamp = _startSaleBlockTimestamp;
         stopSaleBlockTimestamp = _stopSaleBlockTimestamp;
+
+        console.log("Sale contract deployed by '%s'", owner());
     }
 
     /// @notice Emits an event when an advisor have minted
@@ -119,7 +122,7 @@ contract Sale is Ownable {
     }
 
     /// @param _sender The address whose leaf hash needs to be generated
-    /// @return The hash value of the sender address
+    /// @return leaf The hash value of the sender address
     function generateLeaf(address _sender) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(_sender));
     }
