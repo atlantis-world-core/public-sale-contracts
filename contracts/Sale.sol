@@ -66,12 +66,6 @@ contract Sale is Ownable {
 
     event NewStartKeyToScrollSwap(uint256 timestamp);
 
-    /// @dev For debugging purposes only, will be removed when ready for Mainnet deployment
-    /// TODO: To be removed
-    function getTimestamp() external view returns (uint256) {
-        return block.timestamp;
-    }
-
     modifier isSaleOnGoing() {
         require(
             block.timestamp >= startSaleBlockTimestamp,
@@ -87,6 +81,11 @@ contract Sale is Ownable {
     }
 
     modifier canKeySwapped() {
+        // TODO: To verify with team
+        require(
+            startKeyToScrollSwapTimestamp != 0,
+            "A date for swapping hasn't been set"
+        );
         require(
             block.timestamp >= startKeyToScrollSwapTimestamp,
             "Please wait for the swapping to begin"

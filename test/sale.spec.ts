@@ -166,11 +166,9 @@ describe("Sale", () => {
         saleContract.startSaleBlockTimestamp(),
         saleContract.stopSaleBlockTimestamp(),
       ]);
-    const blockTimestamp = await saleContract.getTimestamp();
     console.log(
       "[logTimestamps] ⌚ logging timestamps",
       {
-        blockTimestamp: fromUnixTimestamp(blockTimestamp).toLocaleDateString(),
         _startSaleBlockTimestamp: fromUnixTimestamp(
           _startSaleBlockTimestamp
         ).toLocaleDateString(),
@@ -207,7 +205,7 @@ describe("Sale", () => {
         from: minter.address,
         value: validMintPrice,
       };
-      await logTimestamps(saleContract, "should revert test");
+      // await logTimestamps(saleContract, "should revert test");
 
       // act & assert
       await expect(saleContract.buyKeyFromSale(proof, overrides)).to.be
@@ -274,7 +272,62 @@ describe("Sale", () => {
   });
 
   describe("modifier: canKeySwapped", () => {
-    it(`SHOULD NOT revert with "Please wait for the swapping to begin", WHEN the sale timeframe is still over`, async () => {
+    it(`SHOULD revert with "A date for swapping hasn't been set", WHEN the startKeyToScrollSwapTimestamp is not set`, async () => {
+      // arrange
+      let saleContract = await deploySaleContract(
+        toUnixTimestamp("2020-12-01"),
+        toUnixTimestamp("2021-01-31")
+      );
+      saleContract = saleContract.connect(owner);
+      const overrides = {
+        from: owner.address,
+      };
+
+      // act
+      await Promise.all([
+        saleContract.buyKeyPostSale({
+          ...overrides,
+          value: validMintPrice,
+        }),
+      ]);
+
+      // assert
+      await expect(
+        saleContract.sellKeyForScroll(1, overrides)
+      ).to.be.revertedWith("A date for swapping hasn't been set");
+    });
+
+    it(`SHOULD revert with "Please wait for the swapping to begin", WHEN the startKeyToScrollSwapTimestamp is not set`, async () => {
+      // arrange
+      let saleContract = await deploySaleContract(
+        toUnixTimestamp("2020-12-01"),
+        toUnixTimestamp("2021-01-31")
+      );
+      saleContract = saleContract.connect(owner);
+      const keySwappingTimestamp = toUnixTimestamp("2023-12-05");
+      const overrides = {
+        from: owner.address,
+      };
+
+      // act
+      await Promise.all([
+        saleContract.buyKeyPostSale({
+          ...overrides,
+          value: validMintPrice,
+        }),
+        saleContract.setStartKeyToScrollSwapTimestamp(
+          keySwappingTimestamp,
+          overrides
+        ),
+      ]);
+
+      // assert
+      await expect(
+        saleContract.sellKeyForScroll(1, overrides)
+      ).to.be.revertedWith("Please wait for the swapping to begin");
+    });
+
+    it(`SHOULD revert with "ERC721: owner query for nonexistent token", WHEN the sale timeframe is over AND attempts to burn a key that caller doesn't own`, async () => {
       // arrange
       let saleContract = await deploySaleContract(
         toUnixTimestamp("2020-12-01"),
@@ -299,11 +352,41 @@ describe("Sale", () => {
       ]);
 
       // assert
-      // await expect(saleContract.sellKeyForScroll(0, overrides)).not.to.be
-      //   .reverted;
+      await expect(
+        saleContract.sellKeyForScroll(5, overrides)
+      ).to.be.revertedWith("ERC721: owner query for nonexistent token");
+    });
+
+    it(`SHOULD NOT revert with "Please wait for the swapping to begin", WHEN the sale timeframe is over`, async () => {
+      // arrange
+      let saleContract = await deploySaleContract(
+        toUnixTimestamp("2020-12-01"),
+        toUnixTimestamp("2021-01-31")
+      );
+      saleContract = saleContract.connect(owner);
+      const keySwappingTimestamp = toUnixTimestamp("2020-12-05");
+      const overrides = {
+        from: owner.address,
+      };
+
+      // act
+      await Promise.all([
+        saleContract.buyKeyPostSale({
+          ...overrides,
+          value: validMintPrice,
+        }),
+        saleContract.setStartKeyToScrollSwapTimestamp(
+          keySwappingTimestamp,
+          overrides
+        ),
+      ]);
+
+      // assert
+      await expect(saleContract.sellKeyForScroll(1, overrides)).not.to.be
+        .reverted;
       await expect(
         saleContract.sellKeyForScroll(1, overrides)
-      ).to.be.revertedWith("Please wait for the swapping to begin");
+      ).not.to.be.revertedWith("Please wait for the swapping to begin");
     });
   });
 
