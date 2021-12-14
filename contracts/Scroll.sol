@@ -5,14 +5,14 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721Enumer
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "./interface/ScrollContractInterface.sol";
+import "./interface/IScroll.sol";
 
 /// @title Scroll Contract, for managing the behaviour of ERC721 Scroll.
 /// @author Rachit Anand Srivastava
 /// @notice Contract is used for tracking the Scrolls claimed.
 /// @dev the contract is made upgradaeble using OpenZeppelin Upgadaeble Library
 contract ScrollContract is
-    ScrollContractInterface,
+    IScroll,
     ERC721EnumerableUpgradeable,
     AccessControlUpgradeable,
     OwnableUpgradeable

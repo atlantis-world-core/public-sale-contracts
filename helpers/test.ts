@@ -5,7 +5,7 @@ import { fromUnixTimestamp, toUnixTimestamp } from "./time";
 import { ADVISOR_WHITELISTED_USERS, WHITELISTED_USERS } from "./whitelist";
 import { deployMockContract } from "@ethereum-waffle/mock-contract";
 
-import PublicSaleContractABI from "../artifacts/contracts/Sale.sol/PublicSaleContract.json";
+import SaleABI from "../artifacts/contracts/Sale.sol/Sale.json";
 import KeysContractABI from "../artifacts/contracts/Keys.sol/KeysContract.json";
 import ScrollContractABI from "../artifacts/contracts/Scroll.sol/ScrollContract.json";
 
@@ -47,7 +47,7 @@ export async function useTestHelper(args?: TestHelperHook) {
   const stopSaleBlockTimestamp = saleStop ?? toUnixTimestamp("2022-01-31");
 
   // Sale contract deploy
-  const SaleContract = await ethers.getContractFactory("PublicSaleContract", {
+  const SaleContract = await ethers.getContractFactory("Sale", {
     signer: owner,
   });
   const saleContract = await SaleContract.deploy(
@@ -56,8 +56,9 @@ export async function useTestHelper(args?: TestHelperHook) {
     startSaleBlockTimestamp,
     stopSaleBlockTimestamp
   );
-  const mockSaleContract = await deployMockContract(owner, PublicSaleContractABI.abi);
+  const mockSaleContract = await deployMockContract(owner, SaleABI.abi);
   await saleContract.deployed();
+  console.log("Sale contract address", saleContract.address);
 
   // Keys contract deploy
   const KeysContract = await ethers.getContractFactory("KeysContract");
@@ -65,16 +66,18 @@ export async function useTestHelper(args?: TestHelperHook) {
   const mockKeysContract = await deployMockContract(owner, KeysContractABI.abi);
   await keysContract.deployed();
   await saleContract.setKeysAddress(keysContract.address);
+  console.log("Keys contract address", keysContract.address);
 
   // ScrollContract deploy
   const ScrollContract = await ethers.getContractFactory("ScrollContract");
   const scrollContract = await ScrollContract.deploy();
-  const mockScrollsContract = await deployMockContract(
+  const mockScrollContract = await deployMockContract(
     owner,
     ScrollContractABI.abi
   );
   await scrollContract.deployed();
   await saleContract.setScollAddress(scrollContract.address);
+  console.log("Scroll contract address", scrollContract.address);
 
   /**
    * @description
@@ -104,7 +107,7 @@ export async function useTestHelper(args?: TestHelperHook) {
     keysContract,
     mockKeysContract,
     scrollContract,
-    mockScrollsContract,
+    mockScrollContract,
     owner,
     minter,
     whitelistMerkleTree,

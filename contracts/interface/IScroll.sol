@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.10;
 
-interface ScrollContractInterface {
+interface IScroll {
     struct Scroll {
         uint256 age;
         uint256 aesthetic;

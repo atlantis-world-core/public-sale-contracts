@@ -3,15 +3,15 @@ pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {KeysContractInterface} from "./interface/KeysContractInterface.sol";
-import {ScrollContractInterface} from "./interface/ScrollContractInterface.sol";
+import {IKeys} from "./interface/IKeys.sol";
+import {IScroll} from "./interface/IScroll.sol";
 import "hardhat/console.sol";
 
 /// @title A controller for the entire club sale
 /// @author Rachit Anand Srivastava
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
-contract PublicSaleContract is Ownable {
+contract Sale is Ownable {
     /// @notice All the merkle roots - whitelist address and advisor addresses
     bytes32 private whitelistMerkleRoot;
     bytes32 private advisorMerkleRoot;
@@ -24,8 +24,8 @@ contract PublicSaleContract is Ownable {
     uint256 public startKeyToScrollSwap;
 
     /// @notice key contracts
-    KeysContractInterface internal keysContract;
-    ScrollContractInterface internal scrollContract;
+    IKeys internal keysContract;
+    IScroll internal scrollContract;
 
     /// @param _whitelistMerkleRoot The merkle root of whitelisted candidates
     /// @param _advisorMerkleRoot The merkle root of advisor addresses
@@ -62,10 +62,12 @@ contract PublicSaleContract is Ownable {
 
     event NewAdvisorMerkleRoot(bytes32 merkleRoot);
 
-    event NewKeysAddress(KeysContractInterface keys);
+    event NewKeysAddress(IKeys keys);
 
-    event NewScrollAddress(ScrollContractInterface scroll);
+    event NewScrollAddress(IScroll scroll);
 
+    /// @dev For debugging purposes only, will be removed when ready for Mainnet deployment
+    /// TODO: To be removed
     function getTimestamp() external view returns (uint256) {
         return block.timestamp;
     }
@@ -185,14 +187,17 @@ contract PublicSaleContract is Ownable {
     }
 
     /// @param _keysContractAddress Key contract address
-    function setKeysAddress(KeysContractInterface _keysContractAddress) external onlyOwner {
+    function setKeysAddress(IKeys _keysContractAddress)
+        external
+        onlyOwner
+    {
         keysContract = _keysContractAddress;
 
         emit NewKeysAddress(_keysContractAddress);
     }
 
     /// @param _scrollContractAddress Scroll contract address
-    function setScollAddress(ScrollContractInterface _scrollContractAddress)
+    function setScollAddress(IScroll _scrollContractAddress)
         external
         onlyOwner
     {

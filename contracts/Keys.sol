@@ -23,10 +23,10 @@ contract KeysContract is ERC721Enumerable, AccessControl, Ownable {
 
     /// @notice Sets the MINT and BURN role for the sale contract
     constructor(address _saleContract) ERC721("Keys", "Key") {
-        // grantRole(SALE_CONTRACT_ROLE, _saleContract);
         _setupRole(DEFAULT_ADMIN_ROLE, _saleContract);
         _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
-        
+        // grantRole(SALE_CONTRACT_ROLE, _saleContract);
+
         console.log("Keys contract deployed by '%s'", msg.sender);
         console.log("_saleContract", _saleContract);
     }
