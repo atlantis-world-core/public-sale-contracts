@@ -62,9 +62,9 @@ contract Sale is Ownable {
 
     event NewAdvisorMerkleRoot(bytes32 merkleRoot);
 
-    event NewKeysAddress(IKeys keys);
+    event NewKeysAddress(address keys);
 
-    event NewScrollAddress(IScroll scroll);
+    event NewScrollAddress(address scroll);
 
     /// @dev For debugging purposes only, will be removed when ready for Mainnet deployment
     /// TODO: To be removed
@@ -171,10 +171,13 @@ contract Sale is Ownable {
     // SET FUNCTIONS
     // *************
 
-    function setWhitelistMerkleRoot(bytes32 _newWhiteList) external onlyOwner {
-        whitelistMerkleRoot = _newWhiteList;
+    function setWhitelistMerkleRoot(bytes32 _whitelistMerkleRoot)
+        external
+        onlyOwner
+    {
+        whitelistMerkleRoot = _whitelistMerkleRoot;
 
-        emit NewWhitelistMerkleRoot(_newWhiteList);
+        emit NewWhitelistMerkleRoot(_whitelistMerkleRoot);
     }
 
     function setAdvisorMerkleRoot(bytes32 _advisorMerkleRoot)
@@ -186,23 +189,17 @@ contract Sale is Ownable {
         emit NewAdvisorMerkleRoot(_advisorMerkleRoot);
     }
 
-    /// @param _keysContractAddress Key contract address
-    function setKeysAddress(IKeys _keysContractAddress)
-        external
-        onlyOwner
-    {
-        keysContract = _keysContractAddress;
+    /// @param _address Key contract address
+    function setKeysAddress(address _address) external onlyOwner {
+        keysContract = IKeys(_address);
 
-        emit NewKeysAddress(_keysContractAddress);
+        emit NewKeysAddress(_address);
     }
 
-    /// @param _scrollContractAddress Scroll contract address
-    function setScollAddress(IScroll _scrollContractAddress)
-        external
-        onlyOwner
-    {
-        scrollContract = _scrollContractAddress;
+    /// @param _address Scroll contract address
+    function setScollAddress(address _address) external onlyOwner {
+        scrollContract = IScroll(_address);
 
-        emit NewScrollAddress(_scrollContractAddress);
+        emit NewScrollAddress(_address);
     }
 }
