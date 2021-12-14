@@ -4,35 +4,31 @@ import { useMerkleHelper } from "./merkle";
 import { fromUnixTimestamp, toUnixTimestamp } from "./time";
 import { ADVISOR_WHITELISTED_USERS, WHITELISTED_USERS } from "./whitelist";
 
-export type SetupArgs = {
+export type TestHelperHook = {
   saleStart?: BigNumber;
   saleStop?: BigNumber;
 };
 
-export async function useSaleContractHelper(args?: SetupArgs) {
+export async function useTestHelper(args?: TestHelperHook) {
   const { saleStart, saleStop } = args ?? {};
   const merkleHelper = useMerkleHelper();
 
+  
+
   // signers
   const signers = await ethers.getSigners();
-  // const _signers = new MockProvider().getWallets()
   const [owner, minter] = signers;
   const whitelistSigners = signers.splice(0, 8);
   const advisorSigners = signers.splice(8, 8);
 
   // leaves
   const useEthersJsSigners = true;
-  const leafZeroPad = (leaf: string) => ethers.utils.hexZeroPad(leaf, 32);
-  const whitelistLeaves = (
-    useEthersJsSigners
-      ? whitelistSigners.map((signer) => signer.address)
-      : WHITELISTED_USERS
-  ).map(leafZeroPad);
-  const advisorLeaves = (
-    useEthersJsSigners
-      ? advisorSigners.map((signer) => signer.address)
-      : ADVISOR_WHITELISTED_USERS
-  ).map(leafZeroPad);
+  const whitelistLeaves = useEthersJsSigners
+    ? whitelistSigners.map((signer) => signer.address)
+    : WHITELISTED_USERS;
+  const advisorLeaves = useEthersJsSigners
+    ? advisorSigners.map((signer) => signer.address)
+    : ADVISOR_WHITELISTED_USERS;
 
   // merkle trees
   const whitelistMerkleTree = merkleHelper.createMerkleTree(whitelistLeaves);
@@ -47,18 +43,23 @@ export async function useSaleContractHelper(args?: SetupArgs) {
   const startSaleBlockTimestamp = saleStart ?? toUnixTimestamp("2021-12-31");
   const stopSaleBlockTimestamp = saleStop ?? toUnixTimestamp("2022-01-31");
 
-  // smart contract deployment
+  // Sale: smart contract deployment
   const SaleContract = await ethers.getContractFactory("Sale", {
     signer: owner,
   });
-  const contract = await SaleContract.deploy(
+  const saleContract = await SaleContract.deploy(
     whitelistMerkleRoot,
     advisorMerkleRoot,
     startSaleBlockTimestamp,
     stopSaleBlockTimestamp
   );
+  await smock.mock<MyContract__factory>('MyContract');
+  await saleContract.deployed();
 
-  await contract.deployed();
+  // Keys: smart contract deployment
+  const KeysContract = await ethers.getContractFactory("Keys");
+  const keysContract = await KeysContract.deploy(saleContract.address);
+  await keysContract.deployed();
 
   /**
    * @description
@@ -67,10 +68,10 @@ export async function useSaleContractHelper(args?: SetupArgs) {
   async function logTimestamps() {
     const [_startSaleBlockTimestamp, _stopSaleBlockTimestamp] =
       await Promise.all([
-        contract.startSaleBlockTimestamp(),
-        contract.stopSaleBlockTimestamp(),
+        saleContract.startSaleBlockTimestamp(),
+        saleContract.stopSaleBlockTimestamp(),
       ]);
-    const blockTimestamp = await contract.getTimestamp();
+    const blockTimestamp = await saleContract.getTimestamp();
     console.log("[logTimestamps] ⌚ logging timestamps", {
       blockTimestamp: fromUnixTimestamp(blockTimestamp).toLocaleDateString(),
       _startSaleBlockTimestamp: fromUnixTimestamp(
@@ -83,7 +84,8 @@ export async function useSaleContractHelper(args?: SetupArgs) {
   }
 
   return {
-    contract,
+    saleContract,
+    keysContract,
     owner,
     minter,
     whitelistMerkleTree,
