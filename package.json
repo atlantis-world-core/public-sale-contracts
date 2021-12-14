@@ -1,5 +1,6 @@
 {
   "name": "hardhat-project",
+  "private": true,
   "scripts": {
     "test": "hardhat test",
     "compile": "hardhat compile",
