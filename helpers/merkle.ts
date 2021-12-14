@@ -1,35 +1,56 @@
-import { ADVISOR_WHITELISTED_USERS, WHITELISTED_USERS } from "./whitelist";
+// import { ADVISOR_WHITELISTED_USERS, WHITELISTED_USERS } from "./whitelist";
 import { MerkleTree } from "merkletreejs";
 import keccak256 from "keccak256";
 
-const WHITELIST_LEAVES = WHITELISTED_USERS.map((x) => keccak256(x));
-const ADVISOR_LEAVES = ADVISOR_WHITELISTED_USERS.map((x) => keccak256(x));
+export const useMerkleHelper = () => {
+  const createMerkleTree = (leaves: string[]): MerkleTree => {
+    return new MerkleTree(leaves, keccak256);
+  };
 
-const whitelistMerkleTree = new MerkleTree(WHITELIST_LEAVES, keccak256);
-const advisorMerkleTree = new MerkleTree(ADVISOR_LEAVES, keccak256);
+  const createMerkleProof = (
+    tree: MerkleTree,
+    leaf: string,
+    index?: number
+  ): string[] => {
+    return tree.getHexProof(leaf, index);
+  };
 
-const generateMerkleRoot = (tree: MerkleTree) => {
-  const hex = tree.getHexRoot();
+  const createMerkleRoot = (tree: MerkleTree): string => tree.getHexRoot();
 
-  return hex;
+  return {
+    createMerkleTree,
+    createMerkleProof,
+    createMerkleRoot,
+  };
 };
 
-const whitelistMerkleRoot = generateMerkleRoot(whitelistMerkleTree);
-const advisorMerkleRoot = generateMerkleRoot(advisorMerkleTree);
+// const WHITELIST_LEAVES = WHITELISTED_USERS.map((x) => keccak256(x));
+// const ADVISOR_LEAVES = ADVISOR_WHITELISTED_USERS.map((x) => keccak256(x));
 
-const generateWhitelistMerkleProof = (leaf: string, index: number) => {
-  return whitelistMerkleTree.getHexProof(leaf, index);
-};
+// const whitelistMerkleTree = new MerkleTree(WHITELIST_LEAVES, keccak256);
+// const advisorMerkleTree = new MerkleTree(ADVISOR_LEAVES, keccak256);
 
-const generateAdvisorMerkleProof = (leaf: string, index: number) => {
-  return advisorMerkleTree.getHexProof(leaf, index);
-};
+// const generateMerkleRoot = (tree: MerkleTree) => {
+//   const hex = tree.getHexRoot();
 
-export {
-  WHITELIST_LEAVES,
-  ADVISOR_LEAVES,
-  whitelistMerkleRoot,
-  advisorMerkleRoot,
-  generateWhitelistMerkleProof,
-  generateAdvisorMerkleProof,
-};
+//   return hex;
+// };
+
+// const whitelistMerkleRoot = generateMerkleRoot(whitelistMerkleTree);
+// const advisorMerkleRoot = generateMerkleRoot(advisorMerkleTree);
+
+// const generateWhitelistMerkleProof = (leaf: string, index: number) => {
+//   return whitelistMerkleTree.getHexProof(leaf, index);
+// };
+
+// const generateAdvisorMerkleProof = (leaf: string, index: number) => {
+//   return advisorMerkleTree.getHexProof(leaf, index);
+// };
+
+export // WHITELIST_LEAVES,
+// ADVISOR_LEAVES,
+// whitelistMerkleRoot,
+// advisorMerkleRoot,
+// generateWhitelistMerkleProof,
+// generateAdvisorMerkleProof,
+ {};
