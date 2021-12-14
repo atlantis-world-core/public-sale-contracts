@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -55,6 +55,14 @@ contract Sale is Ownable {
 
     event NewAdvisorMerkleRoot(bytes32 merkleRoot);
 
+    event NewKeysAddress(IKeys keys);
+
+    event NewScrollAddress(IScroll scroll);
+
+    function getTimestamp() external view returns (uint256) {
+        return block.timestamp;
+    }
+
     modifier isSaleOngoing() {
         require(
             block.timestamp >= startSaleBlockTimestamp,
@@ -77,6 +85,11 @@ contract Sale is Ownable {
         _;
     }
 
+    modifier canAffordMintPrice() {
+        require(msg.value >= mintPrice, "Insufficient payment");
+        _;
+    }
+
     /// @param _sender The address whose leaf hash needs to be generated
     /// @return The hash value of the sender address
     function generateLeaf(address _sender) internal pure returns (bytes32) {
@@ -96,6 +109,7 @@ contract Sale is Ownable {
         );
 
         keys.mintKeyToUser(msg.sender);
+
         emit PreMinted(msg.sender);
     }
 
@@ -105,6 +119,7 @@ contract Sale is Ownable {
         external
         payable
         isSaleOngoing
+        canAffordMintPrice
     {
         require(
             MerkleProof.verify(
@@ -112,19 +127,18 @@ contract Sale is Ownable {
                 whitelistMerkleRoot,
                 generateLeaf(msg.sender)
             ),
-            "Not Eligible"
+            "Not eligible"
         );
-        require(msg.value >= mintPrice, "Insufficient payment");
 
         keys.mintKeyToUser(msg.sender);
+
         emit BuyKeyFromSale(msg.sender);
     }
 
     /// @notice For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6969 keys
-    function buyPostSale() public payable hasSaleEnded {
-        require(msg.value >= mintPrice, "Insufficient payment");
-
+    function buyPostSale() public payable hasSaleEnded canAffordMintPrice {
         keys.mintKeyToUser(msg.sender);
+
         emit BuyPostSale(msg.sender);
     }
 
@@ -132,6 +146,7 @@ contract Sale is Ownable {
     function sellKeyForScroll(uint256 _tokenId) external canKeySwapped {
         keys.burnKeyOfUser(_tokenId, msg.sender);
         scroll.mint(msg.sender, _tokenId);
+
         emit SellKeyForScroll(msg.sender, _tokenId);
     }
 
@@ -149,16 +164,21 @@ contract Sale is Ownable {
         onlyOwner
     {
         advisorMerkleRoot = _advisorMerkleRoot;
+
         emit NewAdvisorMerkleRoot(_advisorMerkleRoot);
     }
 
     /// @param _keys Key contract address
     function setKeysAddress(IKeys _keys) external onlyOwner {
         keys = _keys;
+
+        emit NewKeysAddress(_keys);
     }
 
     /// @param _scroll Scroll contract address
     function setScollAddress(IScroll _scroll) external onlyOwner {
         scroll = _scroll;
+
+        emit NewScrollAddress(_scroll);
     }
 }
