@@ -43,13 +43,17 @@ contract Sale is Ownable {
         stopSaleBlockTimestamp = _stopSaleBlockTimestamp;
     }
 
-    event PreMinted(address sender);
+    /// @notice Emits an event when an advisor have minted
+    event AdvisorMinted(address sender);
 
-    event BuyKeyFromSale(address sender);
+    /// @notice Emits an event when a whitelisted user have minted
+    event UserMinted(address sender);
 
-    event BuyPostSale(address sender);
+    /// @notice Emits an event when someone have minted after the sale
+    event PostSaleMinted(address sender);
 
-    event SellKeyForScroll(address sender, uint256 tokenId);
+    /// @notice Emits an event when a key has been swapped for a scroll
+    event KeySwapped(address sender, uint256 tokenId);
 
     event NewWhitelistMerkleRoot(bytes32 merkleRoot);
 
@@ -90,6 +94,30 @@ contract Sale is Ownable {
         _;
     }
 
+    modifier isWhitelisted(bytes32[] calldata _proof) {
+        require(
+            MerkleProof.verify(
+                _proof,
+                whitelistMerkleRoot,
+                generateLeaf(msg.sender)
+            ),
+            "You weren't whitelisted"
+        );
+        _;
+    }
+
+    modifier isAdvisor(bytes32[] calldata _proof) {
+        require(
+            MerkleProof.verify(
+                _proof,
+                advisorMerkleRoot,
+                generateLeaf(msg.sender)
+            ),
+            "Not in the advisory list"
+        );
+        _;
+    }
+
     /// @param _sender The address whose leaf hash needs to be generated
     /// @return The hash value of the sender address
     function generateLeaf(address _sender) internal pure returns (bytes32) {
@@ -98,19 +126,10 @@ contract Sale is Ownable {
 
     /// @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
     /// @param _proof The merkle proof for the Advisory Merkle Tree
-    function preMint(bytes32[] calldata _proof) external {
-        require(
-            MerkleProof.verify(
-                _proof,
-                advisorMerkleRoot,
-                generateLeaf(msg.sender)
-            ),
-            "not in the advisory list"
-        );
-
+    function preMint(bytes32[] calldata _proof) external isAdvisor(_proof) {
         keys.mintKeyToUser(msg.sender);
 
-        emit PreMinted(msg.sender);
+        emit AdvisorMinted(msg.sender);
     }
 
     /// @notice For buying during the public sale, for addresses whitelisted for the sale
@@ -120,34 +139,27 @@ contract Sale is Ownable {
         payable
         isSaleOngoing
         canAffordMintPrice
+        isWhitelisted(_proof)
     {
-        require(
-            MerkleProof.verify(
-                _proof,
-                whitelistMerkleRoot,
-                generateLeaf(msg.sender)
-            ),
-            "Not eligible"
-        );
-
         keys.mintKeyToUser(msg.sender);
 
-        emit BuyKeyFromSale(msg.sender);
+        emit UserMinted(msg.sender);
     }
 
     /// @notice For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6969 keys
     function buyPostSale() public payable hasSaleEnded canAffordMintPrice {
         keys.mintKeyToUser(msg.sender);
 
-        emit BuyPostSale(msg.sender);
+        emit PostSaleMinted(msg.sender);
     }
 
     /// @notice To swap the key for scroll on reveal
     function sellKeyForScroll(uint256 _tokenId) external canKeySwapped {
         keys.burnKeyOfUser(_tokenId, msg.sender);
+
         scroll.mint(msg.sender, _tokenId);
 
-        emit SellKeyForScroll(msg.sender, _tokenId);
+        emit KeySwapped(msg.sender, _tokenId);
     }
 
     // *************
@@ -156,6 +168,7 @@ contract Sale is Ownable {
 
     function setWhitelistMerkleRoot(bytes32 _newWhiteList) external onlyOwner {
         whitelistMerkleRoot = _newWhiteList;
+
         emit NewWhitelistMerkleRoot(_newWhiteList);
     }
 
