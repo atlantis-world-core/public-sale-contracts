@@ -69,7 +69,8 @@ describe("Sale", () => {
   let advisorMerkleRoot: string;
 
   // ether
-  const mintPriceEtherPayload = ethers.utils.parseEther("0.2");
+  const validMintPrice = ethers.utils.parseEther("0.2");
+  const invalidMintPrice = ethers.utils.parseEther("0.01");
 
   const setup = async (args?: SetupArgs) => {
     // signers
@@ -101,6 +102,30 @@ describe("Sale", () => {
       startSaleBlockTimestamp,
       stopSaleBlockTimestamp
     );
+
+    // connect as a minter
+    saleContract = saleContract.connect(minter);
+
+    // logs
+    // console.log("Sale contract address", saleContract.address);
+    // console.log("Keys contract address", keysContract.address);
+    // console.log("Scroll contract address", scrollContract.address);
+  };
+
+  // TODO: Should not deploy Keys and Scroll contract as a normal contract but rather should be a Proxy
+  const deploySaleContract = async (
+    startSaleBlockTimestamp: BigNumber,
+    stopSaleBlockTimestamp: BigNumber
+  ) => {
+    const SaleContract = await ethers.getContractFactory("Sale", {
+      signer: owner,
+    });
+    const saleContract = await SaleContract.deploy(
+      whitelistMerkleRoot,
+      advisorMerkleRoot,
+      startSaleBlockTimestamp,
+      stopSaleBlockTimestamp
+    );
     mockSaleContract = await deployMockContract(owner, SaleABI.abi);
     await saleContract.deployed();
 
@@ -119,36 +144,14 @@ describe("Sale", () => {
     mockScrollContract = await deployMockContract(owner, ScrollContractABI.abi);
     await scrollContract.deployed();
     await saleContract.setScollAddress(scrollContract.address);
+    await scrollContract.initialize(saleContract.address);
 
-    // logs
-    // console.log("Sale contract address", saleContract.address);
-    // console.log("Keys contract address", keysContract.address);
-    // console.log("Scroll contract address", scrollContract.address);
-
-    // connect as a minter
-    saleContract = saleContract.connect(minter);
+    return saleContract;
   };
 
-  const deploySaleContract = async (
-    startSaleBlockTimestamp: BigNumber,
-    stopSaleBlockTimestamp: BigNumber
-  ) => {
-    const SaleContract = await ethers.getContractFactory("Sale", {
-      signer: owner,
-    });
-    const contract = await SaleContract.deploy(
-      whitelistMerkleRoot,
-      advisorMerkleRoot,
-      startSaleBlockTimestamp,
-      stopSaleBlockTimestamp
-    );
-    await contract.deployed();
-    return contract;
-  };
-
-  const whitelistProof = (): string[] => {
+  const validWhitelistProof = (_leaf?: string): string[] => {
     const [, leaf] = whitelistLeaves;
-    const hash = ethers.utils.keccak256(leaf);
+    const hash = ethers.utils.keccak256(_leaf ?? leaf);
     const proof = merkleHelper.createMerkleProof(whitelistMerkleTree, hash);
     return proof;
   };
@@ -184,7 +187,6 @@ describe("Sale", () => {
   describe("property: mintPrice", () => {
     // a very basic test, just so we can easily confirm the test setup is working as expected
     it("SHOULD return 0.2 ether, WHEN called", async () => {
-      // act
       const mintPrice = await saleContract.mintPrice();
 
       // assert
@@ -200,15 +202,14 @@ describe("Sale", () => {
         toUnixTimestamp("2020-01-31")
       );
       saleContract = saleContract.connect(minter);
-      const proof = whitelistProof();
+      const proof = validWhitelistProof();
       const overrides = {
         from: minter.address,
-        value: mintPriceEtherPayload,
+        value: validMintPrice,
       };
-
       await logTimestamps(saleContract, "should revert test");
 
-      // assert
+      // act & assert
       await expect(saleContract.buyKeyFromSale(proof, overrides)).to.be
         .reverted;
       await expect(
@@ -216,37 +217,94 @@ describe("Sale", () => {
       ).to.be.revertedWith("Sale is over");
     });
 
-    before(async () => {
+    it(`SHOULD NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
+      // arrange
       startSaleBlockTimestamp = toUnixTimestamp("2021-12-01");
       stopSaleBlockTimestamp = toUnixTimestamp("2022-01-31");
-
       await setup();
-    });
-
-    // TODO: Test case shouldn't be here
-    it(`SHOULD NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
-      // act
 
       // assert
       await expect(
-        saleContract.buyKeyFromSale(whitelistProof(), {
+        saleContract.buyKeyFromSale(validWhitelistProof(), {
           from: minter.address,
-          value: mintPriceEtherPayload,
+          value: validMintPrice,
         })
       ).to.emit(saleContract, "KeyPurchasedOnSale").and.to.be.not.reverted;
     });
   });
 
   describe("modifier: hasSaleEnded", () => {
-    /** @todo */
+    it(`SHOULD revert with "Sale is ongoing", WHEN the sale timeframe is still on-going`, async () => {
+      // arrange
+      let saleContract = await deploySaleContract(
+        toUnixTimestamp("2021-12-01"),
+        toUnixTimestamp("2022-01-31")
+      );
+      saleContract = saleContract.connect(minter);
+      const overrides = {
+        from: minter.address,
+        value: validMintPrice,
+      };
+
+      // act & assert
+      await expect(saleContract.buyKeyPostSale(overrides)).to.be.reverted;
+      await expect(saleContract.buyKeyPostSale(overrides)).to.be.revertedWith(
+        "Sale is ongoing"
+      );
+    });
+
+    it(`SHOULD NOT revert with "Sale is ongoing", WHEN the sale timeframe is still over`, async () => {
+      // arrange
+      let saleContract = await deploySaleContract(
+        toUnixTimestamp("2020-12-01"),
+        toUnixTimestamp("2021-01-31")
+      );
+      saleContract = saleContract.connect(minter);
+      const overrides = {
+        from: minter.address,
+        value: validMintPrice,
+      };
+
+      // act & assert
+      await expect(saleContract.buyKeyPostSale(overrides)).not.to.be.reverted;
+      await expect(
+        saleContract.buyKeyPostSale(overrides)
+      ).not.to.be.revertedWith("Sale is ongoing");
+    });
   });
 
   describe("modifier: canKeySwapped", () => {
-    /** @todo */
-  });
+    it(`SHOULD NOT revert with "Please wait for the swapping to begin", WHEN the sale timeframe is still over`, async () => {
+      // arrange
+      let saleContract = await deploySaleContract(
+        toUnixTimestamp("2020-12-01"),
+        toUnixTimestamp("2021-01-31")
+      );
+      saleContract = saleContract.connect(owner);
+      const keySwappingTimestamp = toUnixTimestamp("2020-12-05");
+      const overrides = {
+        from: owner.address,
+      };
 
-  describe("function: generateLeaf", () => {
-    /** @todo */
+      // act
+      await Promise.all([
+        saleContract.buyKeyPostSale({
+          ...overrides,
+          value: validMintPrice,
+        }),
+        saleContract.setStartKeyToScrollSwapTimestamp(
+          keySwappingTimestamp,
+          overrides
+        ),
+      ]);
+
+      // assert
+      // await expect(saleContract.sellKeyForScroll(0, overrides)).not.to.be
+      //   .reverted;
+      await expect(
+        saleContract.sellKeyForScroll(1, overrides)
+      ).to.be.revertedWith("Please wait for the swapping to begin");
+    });
   });
 
   describe("function: preMint", () => {
@@ -257,7 +315,7 @@ describe("Sale", () => {
     /** @todo */
   });
 
-  describe("function: buyPostSale", () => {
+  describe("function: buyKeyPostSale", () => {
     /** @todo */
   });
 

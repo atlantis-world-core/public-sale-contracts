@@ -21,7 +21,7 @@ contract Sale is Ownable {
     /// @notice Timestamps
     uint256 public startSaleBlockTimestamp;
     uint256 public stopSaleBlockTimestamp;
-    uint256 public startKeyToScrollSwap;
+    uint256 public startKeyToScrollSwapTimestamp;
 
     /// @notice key contracts
     IKeys internal keysContract;
@@ -42,8 +42,6 @@ contract Sale is Ownable {
 
         startSaleBlockTimestamp = _startSaleBlockTimestamp;
         stopSaleBlockTimestamp = _stopSaleBlockTimestamp;
-
-        console.log("Sale contract deployed by '%s'", owner());
     }
 
     /// @notice Emits an event when an advisor have minted
@@ -65,6 +63,8 @@ contract Sale is Ownable {
     event NewKeysAddress(address keys);
 
     event NewScrollAddress(address scroll);
+
+    event NewStartKeyToScrollSwap(uint256 timestamp);
 
     /// @dev For debugging purposes only, will be removed when ready for Mainnet deployment
     /// TODO: To be removed
@@ -88,7 +88,7 @@ contract Sale is Ownable {
 
     modifier canKeySwapped() {
         require(
-            block.timestamp >= startKeyToScrollSwap,
+            block.timestamp >= startKeyToScrollSwapTimestamp,
             "Please wait for the swapping to begin"
         );
         _;
@@ -170,6 +170,17 @@ contract Sale is Ownable {
     // *************
     // SET FUNCTIONS
     // *************
+
+    /// @notice It sets the timestamp for when key swapping for scrolls is available
+    /// @dev I noticed that the property `startKeyToScrollSwapTimestamp` was never set anywhere else
+    /// TODO: To verify with the team if do we need to be able to set the timestamp for key swapping anytime or just once?
+    function setStartKeyToScrollSwapTimestamp(
+        uint256 _startKeyToScrollSwapTimestamp
+    ) external onlyOwner {
+        startKeyToScrollSwapTimestamp = _startKeyToScrollSwapTimestamp;
+
+        emit NewStartKeyToScrollSwap(_startKeyToScrollSwapTimestamp);
+    }
 
     function setWhitelistMerkleRoot(bytes32 _whitelistMerkleRoot)
         external

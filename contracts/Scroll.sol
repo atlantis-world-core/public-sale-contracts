@@ -17,14 +17,16 @@ contract ScrollContract is
     AccessControlUpgradeable,
     OwnableUpgradeable
 {
-    bytes32 public constant SALE = keccak256("SALE");
+    bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
 
     string baseURI = "";
 
     mapping(address => mapping(uint256 => Scroll)) private UserScroll;
 
-    function initialize(address mintContract) public initializer {
-        grantRole(SALE, mintContract);
+    function initialize(address _saleContract) public initializer {
+        _setupRole(SALE_CONTRACT_ROLE, _saleContract);
+        _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
+        // grantRole(SALE, _saleContract);
         __ERC721_init("Scroll", "SCR");
     }
 
@@ -32,7 +34,7 @@ contract ScrollContract is
     function mint(address user, uint256 tokenId)
         public
         override
-        onlyRole(SALE)
+        onlyRole(SALE_CONTRACT_ROLE)
     {
         _safeMint(user, tokenId);
     }
