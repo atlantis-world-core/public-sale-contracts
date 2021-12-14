@@ -1,11 +1,11 @@
 {
   "name": "hardhat-project",
   "scripts": {
-    "postinstall": "yarn compile",
+    "test": "hardhat test",
+    "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.ts --network localhost",
     "start": "hardhat node",
-    "compile": "hardhat compile",
-    "test": "hardhat test"
+    "postinstall": "yarn compile"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.3",
