@@ -58,7 +58,6 @@ export async function useTestHelper(args?: TestHelperHook) {
   );
   const mockSaleContract = await deployMockContract(owner, SaleABI.abi);
   await saleContract.deployed();
-  console.log("Sale contract address", saleContract.address);
 
   // Keys contract deploy
   const KeysContract = await ethers.getContractFactory("KeysContract");
@@ -66,7 +65,6 @@ export async function useTestHelper(args?: TestHelperHook) {
   const mockKeysContract = await deployMockContract(owner, KeysContractABI.abi);
   await keysContract.deployed();
   await saleContract.setKeysAddress(keysContract.address);
-  console.log("Keys contract address", keysContract.address);
 
   // ScrollContract deploy
   const ScrollContract = await ethers.getContractFactory("ScrollContract");
@@ -77,7 +75,6 @@ export async function useTestHelper(args?: TestHelperHook) {
   );
   await scrollContract.deployed();
   await saleContract.setScollAddress(scrollContract.address);
-  console.log("Scroll contract address", scrollContract.address);
 
   /**
    * @description
@@ -100,6 +97,11 @@ export async function useTestHelper(args?: TestHelperHook) {
       ).toLocaleDateString(),
     });
   }
+
+  // logs
+  // console.log("Sale contract address", saleContract.address);
+  // console.log("Keys contract address", keysContract.address);
+  // console.log("Scroll contract address", scrollContract.address);
 
   return {
     saleContract,

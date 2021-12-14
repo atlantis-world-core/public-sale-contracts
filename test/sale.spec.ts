@@ -83,8 +83,7 @@ describe("Sale", () => {
           from: minter.address,
           value: ether,
         })
-      ).to.be.revertedWith("TEMPORARY");
-      await expect(_saleContract.buyKeyFromSale(proof)).to.be.not.reverted;
+      ).to.emit(_saleContract, "KeyPurchasedOnSale").and.to.be.not.reverted;
     });
   });
 

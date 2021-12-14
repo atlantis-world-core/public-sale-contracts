@@ -50,10 +50,10 @@ contract Sale is Ownable {
     event AdvisorMinted(address sender);
 
     /// @notice Emits an event when a whitelisted user have minted
-    event UserMinted(address sender);
+    event KeyPurchasedOnSale(address sender);
 
     /// @notice Emits an event when someone have minted after the sale
-    event PostSaleMinted(address sender);
+    event KeyPurchasedOnPostSale(address sender);
 
     /// @notice Emits an event when a key has been swapped for a scroll
     event KeySwapped(address sender, uint256 tokenId);
@@ -72,7 +72,7 @@ contract Sale is Ownable {
         return block.timestamp;
     }
 
-    modifier isSaleOngoing() {
+    modifier isSaleOnGoing() {
         require(
             block.timestamp >= startSaleBlockTimestamp,
             "Sale has not started yet"
@@ -142,20 +142,20 @@ contract Sale is Ownable {
     function buyKeyFromSale(bytes32[] calldata _proof)
         external
         payable
-        isSaleOngoing
-        canAffordMintPrice
+        isSaleOnGoing
         isWhitelisted(_proof)
+        canAffordMintPrice
     {
         keysContract.mintKeyToUser(msg.sender);
 
-        emit UserMinted(msg.sender);
+        emit KeyPurchasedOnSale(msg.sender);
     }
 
     /// @notice For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6969 keys
-    function buyPostSale() public payable hasSaleEnded canAffordMintPrice {
+    function buyKeyPostSale() public payable hasSaleEnded canAffordMintPrice {
         keysContract.mintKeyToUser(msg.sender);
 
-        emit PostSaleMinted(msg.sender);
+        emit KeyPurchasedOnPostSale(msg.sender);
     }
 
     /// @notice To swap the key for scroll on reveal
