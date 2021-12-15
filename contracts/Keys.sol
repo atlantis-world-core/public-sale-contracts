@@ -11,91 +11,91 @@ import "hardhat/console.sol";
 /// @author Rachit Anand Srivastava
 /// @notice Contract is used for tracking the keys claimed. These are non transferable erc721 contracts.
 contract KeysContract is ERC721Enumerable, AccessControl, Ownable {
-    using Address for address;
-    using Strings for uint256;
+  using Address for address;
+  using Strings for uint256;
 
-    bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
+  bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
 
-    string internal baseURI = "";
+  string internal baseURI = "";
 
-    /// @dev The current total count of all the minted keys
-    uint256 private count = 0;
+  /// @dev The current total count of all the minted keys
+  uint256 private count = 0;
 
-    modifier tokenTransferDisabled() {
-        require(false, "Token transfers are disabled.");
-        _;
-    }
+  modifier tokenTransferDisabled() {
+    require(false, "Token transfers are disabled.");
+    _;
+  }
 
-    /// @notice Sets the MINT and BURN role for the sale contract
-    constructor(address _saleContract) ERC721("Keys", "Key") {
-        _setupRole(SALE_CONTRACT_ROLE, _saleContract);
-        _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
-        // grantRole(SALE_CONTRACT_ROLE, _saleContract);
-    }
+  /// @notice Sets the MINT and BURN role for the sale contract
+  constructor(address _saleContract) ERC721("Keys", "Key") {
+    _setupRole(SALE_CONTRACT_ROLE, _saleContract);
+    _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
+    // grantRole(SALE_CONTRACT_ROLE, _saleContract);
+  }
 
-    /// @dev See {IERC165-supportsInterface}.
-    function supportsInterface(bytes4 _interfaceId)
-        public
-        view
-        override(ERC721Enumerable, AccessControl)
-        returns (bool)
-    {
-        return
-            _interfaceId == type(IERC721).interfaceId ||
-            _interfaceId == type(IERC721Metadata).interfaceId ||
-            super.supportsInterface(_interfaceId);
-    }
+  /// @dev See {IERC165-supportsInterface}.
+  function supportsInterface(bytes4 _interfaceId)
+    public
+    view
+    override(ERC721Enumerable, AccessControl)
+    returns (bool)
+  {
+    return
+      _interfaceId == type(IERC721).interfaceId ||
+      _interfaceId == type(IERC721Metadata).interfaceId ||
+      super.supportsInterface(_interfaceId);
+  }
 
-    /// @notice override transferFrom behaviour to prevent transfers
-    /// @dev Disabling transfer of tokens
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public pure override tokenTransferDisabled {}
+  /// @notice override transferFrom behaviour to prevent transfers
+  /// @dev Disabling transfer of tokens
+  function transferFrom(
+    address from,
+    address to,
+    uint256 tokenId
+  ) public pure override tokenTransferDisabled {}
 
-    /// @notice override safeTransferFrom behaviour to prevent transfers
-    /// @dev Disabling transfer of tokens
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public pure override tokenTransferDisabled {}
+  /// @notice override safeTransferFrom behaviour to prevent transfers
+  /// @dev Disabling transfer of tokens
+  function safeTransferFrom(
+    address from,
+    address to,
+    uint256 tokenId
+  ) public pure override tokenTransferDisabled {}
 
-    /// @notice override _safeTransfer behaviour to prevent transfers
-    /// @dev Disabling transfer of tokens
-    function _safeTransfer(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory _data
-    ) internal pure override tokenTransferDisabled {}
+  /// @notice override _safeTransfer behaviour to prevent transfers
+  /// @dev Disabling transfer of tokens
+  function _safeTransfer(
+    address from,
+    address to,
+    uint256 tokenId,
+    bytes memory _data
+  ) internal pure override tokenTransferDisabled {}
 
-    /// @notice Function to mint keys to the user, limited to max of 6969 keys
-    /// @dev The contract can be called form the sale contract only
-    function mintKeyToUser(address _user) public onlyRole(SALE_CONTRACT_ROLE) {
-        require(count <= 6969, "All 6969 tokens have been minted");
-        count++;
-        _safeMint(_user, count);
-    }
+  /// @notice Function to mint keys to the user, limited to max of 6969 keys
+  /// @dev The contract can be called form the sale contract only
+  function mintKeyToUser(address _user) public onlyRole(SALE_CONTRACT_ROLE) {
+    require(count <= 6969, "All 6969 tokens have been minted");
+    count++;
+    _safeMint(_user, count);
+  }
 
-    /// @notice Function to burn keys of the user
-    /// @dev The contract can be called form the sale contract only
-    function burnKeyOfUser(uint256 _tokenId, address _user)
-        public
-        onlyRole(SALE_CONTRACT_ROLE)
-    {
-        require(ownerOf(_tokenId) == _user, "Not the owner of the NFT");
-        _burn(_tokenId);
-    }
+  /// @notice Function to burn keys of the user
+  /// @dev The contract can be called form the sale contract only
+  function burnKeyOfUser(uint256 _tokenId, address _user)
+    public
+    onlyRole(SALE_CONTRACT_ROLE)
+  {
+    require(ownerOf(_tokenId) == _user, "Not the owner of the NFT");
+    _burn(_tokenId);
+  }
 
-    /// @notice to set the BaseURI value
-    function _baseURI() internal view override returns (string memory) {
-        return baseURI;
-    }
+  /// @notice to set the BaseURI value
+  function _baseURI() internal view override returns (string memory) {
+    return baseURI;
+  }
 
-    /// @notice to set the BaseURI value
-    function setTokenURI(string calldata _uri) public onlyOwner {
-        baseURI = _uri;
-    }
+  /// @notice to set the BaseURI value
+  function setTokenURI(string calldata _uri) public onlyOwner {
+    baseURI = _uri;
+  }
 }
