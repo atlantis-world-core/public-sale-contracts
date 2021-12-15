@@ -19,9 +19,9 @@ contract ScrollContract is
 {
   bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
 
-  string baseURI = "";
+  string internal baseURI = "";
 
-  mapping(address => mapping(uint256 => Scroll)) private UserScroll;
+  mapping(address => mapping(uint256 => Scroll)) private userScroll;
 
   function initialize(address _saleContract) public initializer {
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
@@ -56,7 +56,7 @@ contract ScrollContract is
     override
     returns (Scroll memory)
   {
-    return UserScroll[user][tokenId];
+    return userScroll[user][tokenId];
   }
 
   /// @dev See {IERC165-supportsInterface}.
