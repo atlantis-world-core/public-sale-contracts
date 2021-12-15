@@ -45,7 +45,7 @@ contract Sale is Ownable {
     }
 
     /// @notice Emits an event when an advisor have minted
-    event AdvisorMinted(address sender);
+    event KeyAdvisorMinted(address sender);
 
     /// @notice Emits an event when a whitelisted user have minted
     event KeyPurchasedOnSale(address sender);
@@ -103,7 +103,7 @@ contract Sale is Ownable {
             MerkleProof.verify(
                 _proof,
                 whitelistMerkleRoot,
-                generateLeaf(msg.sender)
+                _generateLeaf(msg.sender)
             ),
             "You weren't whitelisted"
         );
@@ -115,7 +115,7 @@ contract Sale is Ownable {
             MerkleProof.verify(
                 _proof,
                 advisorMerkleRoot,
-                generateLeaf(msg.sender)
+                _generateLeaf(msg.sender)
             ),
             "Not in the advisory list"
         );
@@ -124,7 +124,7 @@ contract Sale is Ownable {
 
     /// @param _sender The address whose leaf hash needs to be generated
     /// @return leaf The hash value of the sender address
-    function generateLeaf(address _sender) internal pure returns (bytes32) {
+    function _generateLeaf(address _sender) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(_sender));
     }
 
@@ -133,7 +133,7 @@ contract Sale is Ownable {
     function preMint(bytes32[] calldata _proof) external isAdvisor(_proof) {
         keysContract.mintKeyToUser(msg.sender);
 
-        emit AdvisorMinted(msg.sender);
+        emit KeyAdvisorMinted(msg.sender);
     }
 
     /// @notice For buying during the public sale, for addresses whitelisted for the sale
@@ -141,9 +141,9 @@ contract Sale is Ownable {
     function buyKeyFromSale(bytes32[] calldata _proof)
         external
         payable
-        isSaleOnGoing
-        isWhitelisted(_proof)
         canAffordMintPrice
+        isWhitelisted(_proof)
+        isSaleOnGoing
     {
         keysContract.mintKeyToUser(msg.sender);
 
@@ -151,7 +151,7 @@ contract Sale is Ownable {
     }
 
     /// @notice For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6969 keys
-    function buyKeyPostSale() public payable hasSaleEnded canAffordMintPrice {
+    function buyKeyPostSale() public payable canAffordMintPrice hasSaleEnded {
         keysContract.mintKeyToUser(msg.sender);
 
         emit KeyPurchasedOnPostSale(msg.sender);
@@ -173,30 +173,25 @@ contract Sale is Ownable {
     /// @notice It sets the timestamp for when key swapping for scrolls is available
     /// @dev I noticed that the property `startKeyToScrollSwapTimestamp` was never set anywhere else
     /// TODO: To verify with the team if do we need to be able to set the timestamp for key swapping anytime or just once?
-    function setStartKeyToScrollSwapTimestamp(
-        uint256 _startKeyToScrollSwapTimestamp
-    ) external onlyOwner {
-        startKeyToScrollSwapTimestamp = _startKeyToScrollSwapTimestamp;
-
-        emit NewStartKeyToScrollSwap(_startKeyToScrollSwapTimestamp);
-    }
-
-    function setWhitelistMerkleRoot(bytes32 _whitelistMerkleRoot)
+    function setStartKeyToScrollSwapTimestamp(uint256 _timestamp)
         external
         onlyOwner
     {
-        whitelistMerkleRoot = _whitelistMerkleRoot;
+        startKeyToScrollSwapTimestamp = _timestamp;
 
-        emit NewWhitelistMerkleRoot(_whitelistMerkleRoot);
+        emit NewStartKeyToScrollSwap(_timestamp);
     }
 
-    function setAdvisorMerkleRoot(bytes32 _advisorMerkleRoot)
-        external
-        onlyOwner
-    {
-        advisorMerkleRoot = _advisorMerkleRoot;
+    function setWhitelistMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
+        whitelistMerkleRoot = _merkleRoot;
 
-        emit NewAdvisorMerkleRoot(_advisorMerkleRoot);
+        emit NewWhitelistMerkleRoot(_merkleRoot);
+    }
+
+    function setAdvisorMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
+        advisorMerkleRoot = _merkleRoot;
+
+        emit NewAdvisorMerkleRoot(_merkleRoot);
     }
 
     /// @param _address Key contract address

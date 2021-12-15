@@ -55,6 +55,7 @@ describe("Sale", () => {
   let advisorSigners: SignerWithAddress[];
   let owner: SignerWithAddress;
   let minter: SignerWithAddress;
+  let advisor: SignerWithAddress;
 
   // leaves
   let whitelistLeaves: string[];
@@ -68,18 +69,36 @@ describe("Sale", () => {
   let whitelistMerkleRoot: string;
   let advisorMerkleRoot: string;
 
+  // merkle proofs
+  const validWhitelistProof = (_leaf?: string): string[] => {
+    const [, leaf] = whitelistLeaves;
+    const hash = ethers.utils.keccak256(_leaf ?? leaf);
+    const proof = merkleHelper.createMerkleProof(whitelistMerkleTree, hash);
+    return proof;
+  };
+  const validAdvisorProof = (_leaf?: string): string[] => {
+    const [leaf] = advisorLeaves;
+    const hash = ethers.utils.keccak256(_leaf ?? leaf);
+    const proof = merkleHelper.createMerkleProof(advisorMerkleTree, hash);
+    return proof;
+  };
+  const invalidMerkleProof = (): string[] => [];
+
   // ether
-  const validMintPrice = ethers.utils.parseEther("0.2");
-  const invalidMintPrice = ethers.utils.parseEther("0.01");
+  const validMintPayment = ethers.utils.parseEther("0.2");
+  const invalidMintPayment = ethers.utils.parseEther("0.01");
 
   const setup = async (args?: SetupArgs) => {
     // signers
     const signers = await ethers.getSigners();
-    const [_owner, _minter] = signers;
-    owner = _owner;
-    minter = _minter;
     whitelistSigners = signers.splice(0, 8);
     advisorSigners = signers.splice(8, 8);
+    const [_owner, _minter] = whitelistSigners;
+    const [_advisor] = advisorSigners;
+
+    owner = _owner;
+    minter = _minter;
+    advisor = _advisor;
 
     // leaves
     whitelistLeaves = useEthersJsSigners
@@ -149,13 +168,6 @@ describe("Sale", () => {
     return saleContract;
   };
 
-  const validWhitelistProof = (_leaf?: string): string[] => {
-    const [, leaf] = whitelistLeaves;
-    const hash = ethers.utils.keccak256(_leaf ?? leaf);
-    const proof = merkleHelper.createMerkleProof(whitelistMerkleTree, hash);
-    return proof;
-  };
-
   /**
    * @description
    * Just logs the timestamps from the smart contract.
@@ -182,7 +194,7 @@ describe("Sale", () => {
 
   beforeEach(async () => await setup());
 
-  describe("property: mintPrice", () => {
+  describe("mintPrice", () => {
     // a very basic test, just so we can easily confirm the test setup is working as expected
     it("SHOULD return 0.2 ether, WHEN called", async () => {
       const mintPrice = await saleContract.mintPrice();
@@ -192,8 +204,37 @@ describe("Sale", () => {
     });
   });
 
-  describe("modifier: isSaleOngoing", () => {
-    it(`SHOULD revert with "Sale is over", WHEN GIVEN a valid merkle proof AND the sale timeframe is from the past`, async () => {
+  describe("buyKeyFromSale", () => {
+    it(`SHOULD revert with "Insufficient payment", WHEN GIVEN an invalid mint price AND the sale is still on-going`, async () => {
+      // arrange
+      saleContract = saleContract.connect(minter);
+      const overrides = {
+        from: minter.address,
+        value: invalidMintPayment,
+      };
+
+      // act & assert
+      await expect(
+        saleContract.buyKeyFromSale(invalidMerkleProof(), overrides)
+      ).to.be.revertedWith("Insufficient payment");
+    });
+
+    it(`SHOULD revert with "You weren't whitelisted", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
+      // arrange
+      saleContract = saleContract.connect(minter);
+      const badMerkleProof: string[] = [];
+      const overrides = {
+        from: minter.address,
+        value: validMintPayment,
+      };
+
+      // act & assert
+      await expect(
+        saleContract.buyKeyFromSale(badMerkleProof, overrides)
+      ).to.be.revertedWith("You weren't whitelisted");
+    });
+
+    it(`SHOULD revert with "Sale is over", WHEN GIVEN a valid merkle proof AND the sale time range is from the past`, async () => {
       // arrange
       let saleContract = await deploySaleContract(
         toUnixTimestamp("2019-12-01"),
@@ -203,13 +244,11 @@ describe("Sale", () => {
       const proof = validWhitelistProof();
       const overrides = {
         from: minter.address,
-        value: validMintPrice,
+        value: validMintPayment,
       };
       // await logTimestamps(saleContract, "should revert test");
 
       // act & assert
-      await expect(saleContract.buyKeyFromSale(proof, overrides)).to.be
-        .reverted;
       await expect(
         saleContract.buyKeyFromSale(proof, overrides)
       ).to.be.revertedWith("Sale is over");
@@ -225,23 +264,38 @@ describe("Sale", () => {
       await expect(
         saleContract.buyKeyFromSale(validWhitelistProof(), {
           from: minter.address,
-          value: validMintPrice,
+          value: validMintPayment,
         })
       ).to.emit(saleContract, "KeyPurchasedOnSale").and.to.be.not.reverted;
     });
   });
 
-  describe("modifier: hasSaleEnded", () => {
-    it(`SHOULD revert with "Sale is ongoing", WHEN the sale timeframe is still on-going`, async () => {
+  describe("buyKeyPostSale", () => {
+    it(`SHOULD revert with "Insufficient payment", WHEN the sale timeframe is still over AND mint payment is NOT 0.2 ether`, async () => {
       // arrange
       let saleContract = await deploySaleContract(
-        toUnixTimestamp("2021-12-01"),
-        toUnixTimestamp("2022-01-31")
+        toUnixTimestamp("2020-12-01"),
+        toUnixTimestamp("2021-01-31")
       );
       saleContract = saleContract.connect(minter);
       const overrides = {
         from: minter.address,
-        value: validMintPrice,
+        value: invalidMintPayment,
+      };
+
+      // act & assert
+      await expect(saleContract.buyKeyPostSale(overrides)).to.be.reverted;
+      await expect(saleContract.buyKeyPostSale(overrides)).to.be.revertedWith(
+        "Insufficient payment"
+      );
+    });
+
+    it(`SHOULD revert with "Sale is ongoing", WHEN the sale timeframe is still on-going`, async () => {
+      // arrange
+      saleContract = saleContract.connect(minter);
+      const overrides = {
+        from: minter.address,
+        value: validMintPayment,
       };
 
       // act & assert
@@ -251,7 +305,7 @@ describe("Sale", () => {
       );
     });
 
-    it(`SHOULD NOT revert with "Sale is ongoing", WHEN the sale timeframe is still over`, async () => {
+    it(`SHOULD NOT revert with "Sale is ongoing", WHEN the sale timeframe is over`, async () => {
       // arrange
       let saleContract = await deploySaleContract(
         toUnixTimestamp("2020-12-01"),
@@ -260,7 +314,7 @@ describe("Sale", () => {
       saleContract = saleContract.connect(minter);
       const overrides = {
         from: minter.address,
-        value: validMintPrice,
+        value: validMintPayment,
       };
 
       // act & assert
@@ -271,7 +325,7 @@ describe("Sale", () => {
     });
   });
 
-  describe("modifier: canKeySwapped", () => {
+  describe("sellKeyForScroll", () => {
     it(`SHOULD revert with "A date for swapping hasn't been set", WHEN the startKeyToScrollSwapTimestamp is not set`, async () => {
       // arrange
       let saleContract = await deploySaleContract(
@@ -287,7 +341,7 @@ describe("Sale", () => {
       await Promise.all([
         saleContract.buyKeyPostSale({
           ...overrides,
-          value: validMintPrice,
+          value: validMintPayment,
         }),
       ]);
 
@@ -313,7 +367,7 @@ describe("Sale", () => {
       await Promise.all([
         saleContract.buyKeyPostSale({
           ...overrides,
-          value: validMintPrice,
+          value: validMintPayment,
         }),
         saleContract.setStartKeyToScrollSwapTimestamp(
           keySwappingTimestamp,
@@ -343,7 +397,7 @@ describe("Sale", () => {
       await Promise.all([
         saleContract.buyKeyPostSale({
           ...overrides,
-          value: validMintPrice,
+          value: validMintPayment,
         }),
         saleContract.setStartKeyToScrollSwapTimestamp(
           keySwappingTimestamp,
@@ -373,7 +427,7 @@ describe("Sale", () => {
       await Promise.all([
         saleContract.buyKeyPostSale({
           ...overrides,
-          value: validMintPrice,
+          value: validMintPayment,
         }),
         saleContract.setStartKeyToScrollSwapTimestamp(
           keySwappingTimestamp,
@@ -390,35 +444,65 @@ describe("Sale", () => {
     });
   });
 
-  describe("function: preMint", () => {
+  describe("preMint", () => {
+    it(`SHOULD revert with "Not in the advisory list", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
+      // arrange
+      saleContract = saleContract.connect(advisor);
+      const overrides = {
+        from: advisor.address,
+      };
+
+      // act & assert
+      await expect(
+        saleContract.preMint(invalidMerkleProof(), overrides)
+      ).to.be.revertedWith("Not in the advisory list").and.to.be.reverted;
+    });
+
+    it(`SHOULD emit event KeyAdvisorMinted AND NOT revert with "Not in the advisory list", WHEN GIVEN a valid merkle proof AND the sale is still on-going`, async () => {
+      // arrange
+      saleContract = saleContract.connect(advisor);
+
+      // act & assert
+      await expect(
+        saleContract.preMint(validAdvisorProof(advisor.address), {
+          from: advisor.address,
+        })
+      )
+        .to.emit(saleContract, "KeyAdvisorMinted")
+        .not.to.be.revertedWith("Not in the advisory list").and.to.be.not
+        .reverted;
+    });
+
+    it(`SHOULD emit event KeyAdvisorMinted AND NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
+      // // arrange
+      let saleContract = await deploySaleContract(
+        toUnixTimestamp("2020-12-01"),
+        toUnixTimestamp("2021-01-31")
+      );
+      saleContract = saleContract.connect(advisor);
+
+      // assert
+      await expect(
+        saleContract.preMint(validAdvisorProof(advisor.address), {
+          from: advisor.address,
+        })
+      ).to.emit(saleContract, "KeyAdvisorMinted").and.to.be.not.reverted;
+    });
+  });
+
+  describe("setWhiteListMerkleRoot", () => {
     /** @todo */
   });
 
-  describe("function: buyKeyFromSale", () => {
+  describe("setAdvisorMerkleRoot", () => {
     /** @todo */
   });
 
-  describe("function: buyKeyPostSale", () => {
+  describe("setKeysAddress", () => {
     /** @todo */
   });
 
-  describe("function: sellKeyForScroll", () => {
-    /** @todo */
-  });
-
-  describe("function: setWhiteListMerkleRoot", () => {
-    /** @todo */
-  });
-
-  describe("function: setAdvisorMerkleRoot", () => {
-    /** @todo */
-  });
-
-  describe("function: setKeysAddress", () => {
-    /** @todo */
-  });
-
-  describe("function: setScollAddress", () => {
+  describe("setScollAddress", () => {
     /** @todo */
   });
 });
