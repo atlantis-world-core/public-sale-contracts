@@ -469,8 +469,7 @@ describe("Sale", () => {
         })
       )
         .to.emit(saleContract, "KeyAdvisorMinted")
-        .not.to.be.revertedWith("Not in the advisory list").and.to.be.not
-        .reverted;
+        .and.not.to.be.revertedWith("Not in the advisory list");
     });
 
     it(`SHOULD emit event KeyAdvisorMinted AND NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
@@ -490,19 +489,130 @@ describe("Sale", () => {
     });
   });
 
-  describe("setWhiteListMerkleRoot", () => {
-    /** @todo */
+  describe("setStartKeyToScrollSwapTimestamp", () => {
+    it(`SHOULD NOT revert, WHEN the owner makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(owner);
+
+      // act & assert
+      await expect(
+        saleContract.setStartKeyToScrollSwapTimestamp(startSaleBlockTimestamp)
+      ).to.emit(saleContract, "NewStartKeyToScrollSwapTimestamp").and.to.be.not
+        .reverted;
+    });
+
+    it(`SHOULD revert with "Ownable: caller is not the owner", WHEN it's NOT the owner that makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(advisor);
+
+      // act & assert
+      await expect(
+        saleContract.setStartKeyToScrollSwapTimestamp(startSaleBlockTimestamp)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+  });
+
+  describe("setWhitelistMerkleRoot", () => {
+    it(`SHOULD NOT revert, WHEN the owner makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(owner);
+
+      // act & assert
+      await expect(saleContract.setWhitelistMerkleRoot(advisorMerkleRoot)).to.be
+        .not.reverted;
+    });
+
+    it(`SHOULD revert with "Ownable: caller is not the owner", WHEN it's NOT the owner that makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(advisor);
+
+      // act & assert
+      await expect(
+        saleContract.setWhitelistMerkleRoot(advisorMerkleRoot)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
   });
 
   describe("setAdvisorMerkleRoot", () => {
-    /** @todo */
+    it(`SHOULD NOT revert, WHEN the owner makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(owner);
+
+      // act & assert
+      await expect(saleContract.setAdvisorMerkleRoot(whitelistMerkleRoot)).to.be
+        .not.reverted;
+    });
+
+    it(`SHOULD revert with "Ownable: caller is not the owner", WHEN it's NOT the owner that makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(advisor);
+
+      // act & assert
+      await expect(
+        saleContract.setAdvisorMerkleRoot(whitelistMerkleRoot)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
   });
 
   describe("setKeysAddress", () => {
-    /** @todo */
+    it(`SHOULD NOT revert, WHEN the owner makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(owner);
+
+      // act & assert
+      await expect(saleContract.setKeysAddress(saleContract.address)).to.be.not
+        .reverted;
+    });
+
+    it(`SHOULD revert with "Ownable: caller is not the owner", WHEN it's NOT the owner that makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(advisor);
+
+      // act & assert
+      await expect(
+        saleContract.setKeysAddress(saleContract.address)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it(`SHOULD revert with "Must not be an empty address", WHEN GIVEN address(0) AND the owner makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(owner);
+
+      // act & assert
+      await expect(
+        saleContract.setKeysAddress(ethers.constants.AddressZero)
+      ).to.be.revertedWith("Must not be an empty address");
+    });
   });
 
   describe("setScollAddress", () => {
-    /** @todo */
+    it(`SHOULD NOT revert, WHEN the owner makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(owner);
+
+      // act & assert
+      await expect(saleContract.setScollAddress(saleContract.address)).to.be.not
+        .reverted;
+    });
+
+    it(`SHOULD revert with "Ownable: caller is not the owner", WHEN it's NOT the owner that makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(advisor);
+
+      // act & assert
+      await expect(
+        saleContract.setScollAddress(saleContract.address)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it(`SHOULD revert with "Must not be an empty address", WHEN GIVEN address(0) AND the owner makes the call`, async () => {
+      // arrange
+      saleContract = saleContract.connect(owner);
+
+      // act & assert
+      await expect(
+        saleContract.setScollAddress(ethers.constants.AddressZero)
+      ).to.be.revertedWith("Must not be an empty address");
+    });
   });
 });

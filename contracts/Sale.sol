@@ -56,15 +56,16 @@ contract Sale is Ownable {
     /// @notice Emits an event when a key has been swapped for a scroll
     event KeySwapped(address sender, uint256 tokenId);
 
-    event NewWhitelistMerkleRoot(bytes32 merkleRoot);
-
-    event NewAdvisorMerkleRoot(bytes32 merkleRoot);
-
     event NewKeysAddress(address keys);
 
     event NewScrollAddress(address scroll);
 
-    event NewStartKeyToScrollSwap(uint256 timestamp);
+    event NewStartKeyToScrollSwapTimestamp(uint256 timestamp);
+
+    modifier validAddress(address _address) {
+        require(address(0) != _address, "Must not be an empty address");
+        _;
+    }
 
     modifier isSaleOnGoing() {
         require(
@@ -179,30 +180,34 @@ contract Sale is Ownable {
     {
         startKeyToScrollSwapTimestamp = _timestamp;
 
-        emit NewStartKeyToScrollSwap(_timestamp);
+        emit NewStartKeyToScrollSwapTimestamp(_timestamp);
     }
 
     function setWhitelistMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
         whitelistMerkleRoot = _merkleRoot;
-
-        emit NewWhitelistMerkleRoot(_merkleRoot);
     }
 
     function setAdvisorMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
         advisorMerkleRoot = _merkleRoot;
-
-        emit NewAdvisorMerkleRoot(_merkleRoot);
     }
 
     /// @param _address Key contract address
-    function setKeysAddress(address _address) external onlyOwner {
+    function setKeysAddress(address _address)
+        external
+        onlyOwner
+        validAddress(_address)
+    {
         keysContract = IKeys(_address);
 
         emit NewKeysAddress(_address);
     }
 
     /// @param _address Scroll contract address
-    function setScollAddress(address _address) external onlyOwner {
+    function setScollAddress(address _address)
+        external
+        onlyOwner
+        validAddress(_address)
+    {
         scrollContract = IScroll(_address);
 
         emit NewScrollAddress(_address);
