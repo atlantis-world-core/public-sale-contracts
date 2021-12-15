@@ -125,7 +125,12 @@ contract Sale is Ownable {
 
     /// @param _sender The address whose leaf hash needs to be generated
     /// @return leaf The hash value of the sender address
-    function _generateLeaf(address _sender) internal pure returns (bytes32) {
+    function _generateLeaf(address _sender)
+        internal
+        pure
+        validAddress(_sender)
+        returns (bytes32)
+    {
         return keccak256(abi.encodePacked(_sender));
     }
 
