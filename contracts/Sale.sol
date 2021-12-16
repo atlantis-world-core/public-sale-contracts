@@ -18,6 +18,13 @@ contract Sale is Ownable {
 
   uint256 public mintPrice = 0.2 ether;
 
+  /// @notice 6666+303=6969 Total Supply
+  uint256 public constant PUBLICKEYLIMIT = 6666;
+  uint256 public constant ADVISORYKEYLIMIT = 303;
+
+  uint256 publicKeyMintCount = 0;
+  uint256 advisoryKeyLimitCount = 0;
+
   /// @notice Timestamps
   uint256 public startSaleBlockTimestamp;
   uint256 public stopSaleBlockTimestamp;
@@ -94,66 +101,19 @@ contract Sale is Ownable {
     _;
   }
 
-  modifier canAffordMintPrice() {
+  ///  @notice - For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6666 keys
+
+  function buyPostSale() public payable hasSaleEnded {
     require(msg.value >= mintPrice, "Insufficient payment");
-    _;
-  }
-
-  modifier isWhitelisted(bytes32[] calldata _proof) {
-    require(
-      MerkleProof.verify(
-        _proof,
-        whitelistMerkleRoot,
-        _generateLeaf(msg.sender)
-      ),
-      "You weren't whitelisted"
-    );
-    _;
-  }
-
-  modifier isAdvisor(bytes32[] calldata _proof) {
-    require(
-      MerkleProof.verify(_proof, advisorMerkleRoot, _generateLeaf(msg.sender)),
-      "Not in the advisory list"
-    );
-    _;
-  }
-
-  /// @param _sender The address whose leaf hash needs to be generated
-  /// @return leaf The hash value of the sender address
-  function _generateLeaf(address _sender)
-    internal
-    pure
-    validAddress(_sender)
-    returns (bytes32)
-  {
-    return keccak256(abi.encodePacked(_sender));
-  }
-
-  /// @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
-  /// @param _proof The merkle proof for the Advisory Merkle Tree
-  function preMint(bytes32[] calldata _proof) external isAdvisor(_proof) {
+    require(publicKeyMintCount < PUBLICKEYLIMIT, "Mint Limit Reached");
+    publicKeyMintCount++;
     keysContract.mintKeyToUser(msg.sender);
-
-    emit KeyAdvisorMinted(msg.sender);
-  }
-
-  /// @notice For buying during the public sale, for addresses whitelisted for the sale
-  /// @param _proof The merkle proof for the `whitelistMerkleRoot`
-  function buyKeyFromSale(bytes32[] calldata _proof)
-    external
-    payable
-    canAffordMintPrice
-    isWhitelisted(_proof)
-    isSaleOnGoing
-  {
-    keysContract.mintKeyToUser(msg.sender);
-
-    emit KeyPurchasedOnSale(msg.sender);
   }
 
   /// @notice For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6969 keys
-  function buyKeyPostSale() public payable canAffordMintPrice hasSaleEnded {
+  function buyKeyPostSale() public payable hasSaleEnded {
+    require(msg.value >= mintPrice, "Insufficient payment");
+
     keysContract.mintKeyToUser(msg.sender);
 
     emit KeyPurchasedOnPostSale(msg.sender);
@@ -166,6 +126,19 @@ contract Sale is Ownable {
     scrollContract.mint(msg.sender, _tokenId);
 
     emit KeySwapped(msg.sender, _tokenId);
+  }
+
+  /// @notice minting unminted tokens to treasury
+  function mintLeftOvers(address owner) external onlyOwner {
+    // TODO : EIP 2809 implementation
+    for (
+      uint256 i = 0;
+      i < 6969 - (publicKeyMintCount + advisoryKeyLimitCount);
+      i++
+    ) keysContract.mintKeyToUser(owner);
+
+    publicKeyMintCount = 6666;
+    advisoryKeyLimitCount = 303;
   }
 
   // *************
@@ -212,5 +185,9 @@ contract Sale is Ownable {
     scrollContract = IScroll(_address);
 
     emit NewScrollAddress(_address);
+  }
+
+  function setStartKeyScrollSwap(uint256 _startKeyToScroll) external onlyOwner {
+    startKeyToScrollSwapTimestamp = _startKeyToScroll;
   }
 }

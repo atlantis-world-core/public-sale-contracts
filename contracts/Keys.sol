@@ -28,9 +28,7 @@ contract KeysContract is ERC721Enumerable, AccessControl, Ownable {
 
   /// @notice Sets the MINT and BURN role for the sale contract
   constructor(address _saleContract) ERC721("Keys", "Key") {
-    _setupRole(SALE_CONTRACT_ROLE, _saleContract);
-    _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
-    // grantRole(SALE_CONTRACT_ROLE, _saleContract);
+    _setupRole(SALECONTRACT, _saleContract);
   }
 
   /// @dev See {IERC165-supportsInterface}.
@@ -46,35 +44,13 @@ contract KeysContract is ERC721Enumerable, AccessControl, Ownable {
       super.supportsInterface(_interfaceId);
   }
 
-  //   /// @notice override transferFrom behaviour to prevent transfers
-  //   /// @dev Disabling transfer of tokens
-  //   function transferFrom(
-  //     address from,
-  //     address to,
-  //     uint256 tokenId
-  //   ) public pure override tokenTransferDisabled {}
+  /**
+   * @notice Function to mint keys to the user, limited to max of 6969 keys
+   * @dev The contract can be called form the sale contract only
+   */
 
-  //   /// @notice override safeTransferFrom behaviour to prevent transfers
-  //   /// @dev Disabling transfer of tokens
-  //   function safeTransferFrom(
-  //     address from,
-  //     address to,
-  //     uint256 tokenId
-  //   ) public pure override tokenTransferDisabled {}
-
-  //   /// @notice override _safeTransfer behaviour to prevent transfers
-  //   /// @dev Disabling transfer of tokens
-  //   function _safeTransfer(
-  //     address from,
-  //     address to,
-  //     uint256 tokenId,
-  //     bytes memory _data
-  //   ) internal pure override tokenTransferDisabled {}
-
-  /// @notice Function to mint keys to the user, limited to max of 6969 keys
-  /// @dev The contract can be called form the sale contract only
-  function mintKeyToUser(address _user) public onlyRole(SALE_CONTRACT_ROLE) {
-    require(count <= 6969, "All 6969 tokens have been minted");
+  function mintKeyToUser(address user) public onlyRole(SALECONTRACT) {
+    require(count < 6969, "All tokens minted");
     count++;
     _safeMint(_user, count);
   }

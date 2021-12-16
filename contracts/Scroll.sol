@@ -21,8 +21,6 @@ contract ScrollContract is
 
   string internal baseURI;
 
-  mapping(address => mapping(uint256 => Scroll)) private userScroll;
-
   function initialize(address _saleContract) public initializer {
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
     _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
@@ -47,16 +45,6 @@ contract ScrollContract is
   /// @notice to set the BaseURI value
   function setTokenURI(string calldata uri) public onlyOwner {
     baseURI = uri;
-  }
-
-  /// @dev to get Scroll Contruct Regarding a particular NFT
-  function getUserTokenDetails(address user, uint256 tokenId)
-    public
-    view
-    override
-    returns (Scroll memory)
-  {
-    return userScroll[user][tokenId];
   }
 
   /// @dev See {IERC165-supportsInterface}.
