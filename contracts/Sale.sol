@@ -1,20 +1,21 @@
-pragma solidity ^0.8.4;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IKeys } from "./interface/IKeys.sol";
-import { IScroll } from "./interface/IScroll.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IKeys} from "./interface/IKeys.sol";
+import {IScroll} from "./interface/IScroll.sol";
+import "hardhat/console.sol";
 
 /// @title A controller for the entire club sale
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
-
 contract Sale is Ownable {
-  /// @notice all the merkle roots - whitelist address and advisor addresses
-  bytes32 private whiteListMerkleRoot;
+  /// @notice All the merkle roots - whitelist address and advisor addresses
+  bytes32 private whitelistMerkleRoot;
   bytes32 private advisorMerkleRoot;
 
-  uint256 public price = 0.2 ether;
+  uint256 public mintPrice = 0.2 ether;
 
   /// @notice 6666+303=6969 Total Supply
   uint256 public constant PUBLICKEYLIMIT = 6666;
@@ -26,33 +27,53 @@ contract Sale is Ownable {
   /// @notice Timestamps
   uint256 public startSaleBlockTimestamp;
   uint256 public stopSaleBlockTimestamp;
-  uint256 public startKeyToScrollSwap;
+  uint256 public startKeyToScrollSwapTimestamp;
 
   /// @notice key contracts
-  IKeys internal keys;
-  IScroll internal scroll;
+  IKeys internal keysContract;
+  IScroll internal scrollContract;
 
-  /**
-   * @param _whiteListMerkleRoot - merkle root of whitelisted candidates
-   * @param _advisorMerkleRoot - merkle root of advisor addresses
-   * @param _startSaleBlockTimestamp - start timestamp
-   * @param _stopSaleBlockTimestamp - stop sale
-   */
-
+  /// @param _whitelistMerkleRoot The merkle root of whitelisted candidates
+  /// @param _advisorMerkleRoot The merkle root of advisor addresses
+  /// @param _startSaleBlockTimestamp The start sale timestamp
+  /// @param _stopSaleBlockTimestamp The stop sale timestamp
   constructor(
-    bytes32 _whiteListMerkleRoot,
+    bytes32 _whitelistMerkleRoot,
     bytes32 _advisorMerkleRoot,
     uint256 _startSaleBlockTimestamp,
     uint256 _stopSaleBlockTimestamp
   ) {
-    whiteListMerkleRoot = _whiteListMerkleRoot;
+    whitelistMerkleRoot = _whitelistMerkleRoot;
     advisorMerkleRoot = _advisorMerkleRoot;
 
     startSaleBlockTimestamp = _startSaleBlockTimestamp;
     stopSaleBlockTimestamp = _stopSaleBlockTimestamp;
   }
 
-  modifier isSaleOngoing() {
+  /// @notice Emits an event when an advisor have minted
+  event KeyAdvisorMinted(address sender);
+
+  /// @notice Emits an event when a whitelisted user have minted
+  event KeyPurchasedOnSale(address sender);
+
+  /// @notice Emits an event when someone have minted after the sale
+  event KeyPurchasedOnPostSale(address sender);
+
+  /// @notice Emits an event when a key has been swapped for a scroll
+  event KeySwapped(address sender, uint256 tokenId);
+
+  event NewKeysAddress(address keys);
+
+  event NewScrollAddress(address scroll);
+
+  event NewStartKeyToScrollSwapTimestamp(uint256 timestamp);
+
+  modifier validAddress(address _address) {
+    require(address(0) != _address, "Must not be an empty address");
+    _;
+  }
+
+  modifier isSaleOnGoing() {
     require(
       block.timestamp >= startSaleBlockTimestamp,
       "Sale has not started yet"
@@ -67,68 +88,43 @@ contract Sale is Ownable {
   }
 
   modifier canKeySwapped() {
+    // TODO: To verify with team
     require(
-      block.timestamp >= startKeyToScrollSwap,
+      startKeyToScrollSwapTimestamp != 0,
+      "A date for swapping hasn't been set"
+    );
+    require(
+      block.timestamp >= startKeyToScrollSwapTimestamp,
       "Please wait for the swapping to begin"
     );
     _;
   }
 
-  /**
-   * @param sender - the address whose leaf hash needs to be generated
-   * @return the hash value of the sender address
-   */
-  function leaf(address sender) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked(sender));
-  }
-
-  /**
-   * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
-   * @param proof - Merkle proof for the Advisory Merkle Tree
-   */
-  function preMint(bytes32[] calldata proof) external {
-    require(
-      MerkleProof.verify(proof, advisorMerkleRoot, leaf(msg.sender)),
-      "not in the advisory list"
-    );
-    require(advisoryKeyLimitCount < ADVISORYKEYLIMIT, "Mint Limit Reached");
-    advisoryKeyLimitCount++;
-    keys.mintKeyToUser(msg.sender);
-  }
-
-  /**
-   * @notice - for buying during the public sale, for addresses whitelisted for the sale
-   * @param proof - Merkle proof fot the whiteListMerkleRoot
-   */
-  function buyKeyFromSale(bytes32[] calldata proof)
-    external
-    payable
-    isSaleOngoing
-  {
-    require(
-      MerkleProof.verify(proof, whiteListMerkleRoot, leaf(msg.sender)),
-      "Not Eligible"
-    );
-    require(msg.value >= price, "Insufficient payment");
-    require(publicKeyMintCount < PUBLICKEYLIMIT, "Mint Limit Reached");
-    publicKeyMintCount++;
-    keys.mintKeyToUser(msg.sender);
-  }
-
   ///  @notice - For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6666 keys
 
   function buyPostSale() public payable hasSaleEnded {
-    require(msg.value >= price, "Insufficient payment");
+    require(msg.value >= mintPrice, "Insufficient payment");
     require(publicKeyMintCount < PUBLICKEYLIMIT, "Mint Limit Reached");
     publicKeyMintCount++;
-    keys.mintKeyToUser(msg.sender);
+    keysContract.mintKeyToUser(msg.sender);
   }
 
-  /// @notice - To swap the key for scroll on reveal
+  /// @notice For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6969 keys
+  function buyKeyPostSale() public payable hasSaleEnded {
+    require(msg.value >= mintPrice, "Insufficient payment");
 
+    keysContract.mintKeyToUser(msg.sender);
+
+    emit KeyPurchasedOnPostSale(msg.sender);
+  }
+
+  /// @notice To swap the key for scroll on reveal
   function sellKeyForScroll(uint256 _tokenId) external canKeySwapped {
-    keys.burnKeyOfUser(_tokenId, msg.sender);
-    scroll.mint(msg.sender, _tokenId);
+    keysContract.burnKeyOfUser(_tokenId, msg.sender);
+
+    scrollContract.mint(msg.sender, _tokenId);
+
+    emit KeySwapped(msg.sender, _tokenId);
   }
 
   /// @notice minting unminted tokens to treasury
@@ -138,7 +134,7 @@ contract Sale is Ownable {
       uint256 i = 0;
       i < 6969 - (publicKeyMintCount + advisoryKeyLimitCount);
       i++
-    ) keys.mintKeyToUser(owner);
+    ) keysContract.mintKeyToUser(owner);
 
     publicKeyMintCount = 6666;
     advisoryKeyLimitCount = 303;
@@ -148,25 +144,49 @@ contract Sale is Ownable {
   // SET FUNCTIONS
   // *************
 
-  function setWhiteListMerkleRoot(bytes32 _newWhiteList) external onlyOwner {
-    whiteListMerkleRoot = _newWhiteList;
+  /// @notice It sets the timestamp for when key swapping for scrolls is available
+  /// @dev I noticed that the property `startKeyToScrollSwapTimestamp` was never set anywhere else
+  /// TODO: To verify with the team if do we need to be able to set the timestamp for key swapping anytime or just once?
+  function setStartKeyToScrollSwapTimestamp(uint256 _timestamp)
+    external
+    onlyOwner
+  {
+    startKeyToScrollSwapTimestamp = _timestamp;
+
+    emit NewStartKeyToScrollSwapTimestamp(_timestamp);
   }
 
-  function setAdvisorMerkleRoot(bytes32 _advisorMerkleRoot) external onlyOwner {
-    advisorMerkleRoot = _advisorMerkleRoot;
+  function setWhitelistMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
+    whitelistMerkleRoot = _merkleRoot;
   }
 
-  /// @param _keys - key contract address
-  function setKeysAddress(IKeys _keys) external onlyOwner {
-    keys = _keys;
+  function setAdvisorMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
+    advisorMerkleRoot = _merkleRoot;
   }
 
-  /// @param _scroll - scroll contract address
-  function setScollAddress(IScroll _scroll) external onlyOwner {
-    scroll = _scroll;
+  /// @param _address Key contract address
+  function setKeysAddress(address _address)
+    external
+    onlyOwner
+    validAddress(_address)
+  {
+    keysContract = IKeys(_address);
+
+    emit NewKeysAddress(_address);
+  }
+
+  /// @param _address Scroll contract address
+  function setScollAddress(address _address)
+    external
+    onlyOwner
+    validAddress(_address)
+  {
+    scrollContract = IScroll(_address);
+
+    emit NewScrollAddress(_address);
   }
 
   function setStartKeyScrollSwap(uint256 _startKeyToScroll) external onlyOwner {
-    startKeyToScrollSwap = _startKeyToScroll;
+    startKeyToScrollSwapTimestamp = _startKeyToScroll;
   }
 }
