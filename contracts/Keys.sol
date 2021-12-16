@@ -28,7 +28,7 @@ contract KeysContract is ERC721Enumerable, AccessControl, Ownable {
 
   /// @notice Sets the MINT and BURN role for the sale contract
   constructor(address _saleContract) ERC721("Keys", "Key") {
-    _setupRole(SALECONTRACT, _saleContract);
+    _setupRole(SALE_CONTRACT_ROLE, _saleContract);
   }
 
   /// @dev See {IERC165-supportsInterface}.
@@ -49,7 +49,7 @@ contract KeysContract is ERC721Enumerable, AccessControl, Ownable {
    * @dev The contract can be called form the sale contract only
    */
 
-  function mintKeyToUser(address user) public onlyRole(SALECONTRACT) {
+  function mintKeyToUser(address _user) public onlyRole(SALE_CONTRACT_ROLE) {
     require(count < 6969, "All tokens minted");
     count++;
     _safeMint(_user, count);
