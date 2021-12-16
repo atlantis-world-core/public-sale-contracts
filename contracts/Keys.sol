@@ -23,7 +23,7 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
    * @notice Sets the MINT and BURN role for the sale contract
    */
   constructor(address _saleContract) ERC721("Keys", "Key") {
-    grantRole(SALECONTRACT, _saleContract);
+    _setupRole(SALECONTRACT, _saleContract);
   }
 
   /**
@@ -41,35 +41,13 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
       super.supportsInterface(interfaceId);
   }
 
-  // Disabling Transfer of tokens
-  /// @notice override transferFrom behaviour to prevent transfers.
-
-  function transferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) public override {}
-
-  function safeTransferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) public override {}
-
-  function _safeTransfer(
-    address from,
-    address to,
-    uint256 tokenId,
-    bytes memory _data
-  ) internal override {}
-
   /**
    * @notice Function to mint keys to the user, limited to max of 6969 keys
    * @dev The contract can be called form the sale contract only
    */
 
   function mintKeyToUser(address user) public onlyRole(SALECONTRACT) {
-    require(count <= 6969, "All 6969 tokens have been minted");
+    require(count < 6969, "All tokens minted");
     count++;
     _safeMint(user, count);
   }

@@ -17,6 +17,13 @@ contract Sale is Ownable {
 
   uint256 public price = 0.2 ether;
 
+  /// @notice 6666+303=6969 Total Supply
+  uint256 public constant PUBLICKEYLIMIT = 6666;
+  uint256 public constant ADVISORYKEYLIMIT = 303;
+
+  uint256 publicKeyMintCount = 0;
+  uint256 advisoryKeyLimitCount = 0;
+
   /// @notice Timestamps
   uint256 public startSaleBlockTimestamp;
   uint256 public stopSaleBlockTimestamp;
@@ -85,6 +92,8 @@ contract Sale is Ownable {
       MerkleProof.verify(proof, advisorMerkleRoot, leaf(msg.sender)),
       "not in the advisory list"
     );
+    require(advisoryKeyLimitCount < ADVISORYKEYLIMIT, "Mint Limit Reached");
+    advisoryKeyLimitCount++;
     keys.mintKeyToUser(msg.sender);
   }
 
@@ -102,14 +111,17 @@ contract Sale is Ownable {
       "Not Eligible"
     );
     require(msg.value >= price, "Insufficient payment");
-
+    require(publicKeyMintCount < PUBLICKEYLIMIT, "Mint Limit Reached");
+    publicKeyMintCount++;
     keys.mintKeyToUser(msg.sender);
   }
 
-  ///  @notice - For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6969 keys
+  ///  @notice - For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6666 keys
 
   function buyPostSale() public payable hasSaleEnded {
     require(msg.value >= price, "Insufficient payment");
+    require(publicKeyMintCount < PUBLICKEYLIMIT, "Mint Limit Reached");
+    publicKeyMintCount++;
     keys.mintKeyToUser(msg.sender);
   }
 
@@ -118,6 +130,19 @@ contract Sale is Ownable {
   function sellKeyForScroll(uint256 _tokenId) external canKeySwapped {
     keys.burnKeyOfUser(_tokenId, msg.sender);
     scroll.mint(msg.sender, _tokenId);
+  }
+
+  /// @notice minting unminted tokens to treasury
+  function mintLeftOvers(address owner) external onlyOwner {
+    // TODO : EIP 2809 implementation
+    for (
+      uint256 i = 0;
+      i < 6969 - (publicKeyMintCount + advisoryKeyLimitCount);
+      i++
+    ) keys.mintKeyToUser(owner);
+
+    publicKeyMintCount = 6666;
+    advisoryKeyLimitCount = 303;
   }
 
   // *************
@@ -140,5 +165,9 @@ contract Sale is Ownable {
   /// @param _scroll - scroll contract address
   function setScollAddress(IScroll _scroll) external onlyOwner {
     scroll = _scroll;
+  }
+
+  function setStartKeyScrollSwap(uint256 _startKeyToScroll) external onlyOwner {
+    startKeyToScrollSwap = _startKeyToScroll;
   }
 }
