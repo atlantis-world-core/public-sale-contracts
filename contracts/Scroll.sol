@@ -7,7 +7,6 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import "./interface/IScroll.sol";
 
 /// @title Scroll Contract, for managing the behaviour of ERC721 Scroll.
-/// @author Rachit Anand Srivastava
 /// @notice Contract is used for tracking the Scrolls claimed.
 /// @dev the contract is made upgradaeble using OpenZeppelin Upgadaeble Library
 

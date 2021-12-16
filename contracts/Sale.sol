@@ -6,7 +6,6 @@ import { IKeys } from "./interface/IKeys.sol";
 import { IScroll } from "./interface/IScroll.sol";
 
 /// @title A controller for the entire club sale
-/// @author Rachit Anand Srivastava
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
 
