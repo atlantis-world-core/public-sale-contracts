@@ -1,46 +1,43 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "hardhat/console.sol";
 
 /// @title Keys Contract, for managing the behaviour of ERC721 keys
 /// @notice Contract is used for tracking the keys claimed. These are non transferable erc721 contracts.
-contract KeysContract is ERC721Enumerable, AccessControl, Ownable {
+
+contract Keys is ERC721Enumerable, AccessControl, Ownable {
   using Address for address;
   using Strings for uint256;
 
-  bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
+  bytes32 public constant SALECONTRACT = keccak256("SALE");
 
   string internal baseURI = "";
 
-  /// @dev The current total count of all the minted keys
   uint256 private count = 0;
 
-  //   modifier tokenTransferDisabled() {
-  //     require(false, "Token transfers are disabled.");
-  //     _;
-  //   }
-
-  /// @notice Sets the MINT and BURN role for the sale contract
+  /**
+   * @notice Sets the MINT and BURN role for the sale contract
+   */
   constructor(address _saleContract) ERC721("Keys", "Key") {
-    _setupRole(SALE_CONTRACT_ROLE, _saleContract);
+    _setupRole(SALECONTRACT, _saleContract);
   }
 
-  /// @dev See {IERC165-supportsInterface}.
-  function supportsInterface(bytes4 _interfaceId)
+  /**
+   * @dev See {IERC165-supportsInterface}.
+   */
+  function supportsInterface(bytes4 interfaceId)
     public
     view
     override(ERC721Enumerable, AccessControl)
     returns (bool)
   {
     return
-      _interfaceId == type(IERC721).interfaceId ||
-      _interfaceId == type(IERC721Metadata).interfaceId ||
-      super.supportsInterface(_interfaceId);
+      interfaceId == type(IERC721).interfaceId ||
+      interfaceId == type(IERC721Metadata).interfaceId ||
+      super.supportsInterface(interfaceId);
   }
 
   /**
@@ -48,20 +45,23 @@ contract KeysContract is ERC721Enumerable, AccessControl, Ownable {
    * @dev The contract can be called form the sale contract only
    */
 
-  function mintKeyToUser(address _user) public onlyRole(SALE_CONTRACT_ROLE) {
+  function mintKeyToUser(address user) public onlyRole(SALECONTRACT) {
     require(count < 6969, "All tokens minted");
     count++;
-    _safeMint(_user, count);
+    _safeMint(user, count);
   }
 
-  /// @notice Function to burn keys of the user
-  /// @dev The contract can be called form the sale contract only
-  function burnKeyOfUser(uint256 _tokenId, address _user)
+  /**
+   * @notice Function to burn keys of the user
+   * @dev The contract can be called form the sale contract only
+   */
+
+  function burnKeyOfUser(uint256 tokenId, address user)
     public
-    onlyRole(SALE_CONTRACT_ROLE)
+    onlyRole(SALECONTRACT)
   {
-    require(ownerOf(_tokenId) == _user, "Not the owner of the NFT");
-    _burn(_tokenId);
+    require(ownerOf(tokenId) == user, "Not the owner of the NFT");
+    _burn(tokenId);
   }
 
   /// @notice to set the BaseURI value
@@ -70,7 +70,7 @@ contract KeysContract is ERC721Enumerable, AccessControl, Ownable {
   }
 
   /// @notice to set the BaseURI value
-  function setTokenURI(string calldata _uri) public onlyOwner {
-    baseURI = _uri;
+  function setTokenURI(string calldata uri) public onlyOwner {
+    baseURI = uri;
   }
 }

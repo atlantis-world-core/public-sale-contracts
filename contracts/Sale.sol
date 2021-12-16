@@ -3,6 +3,7 @@ pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import {IKeys} from "./interface/IKeys.sol";
 import {IScroll} from "./interface/IScroll.sol";
 import "hardhat/console.sol";
@@ -10,7 +11,7 @@ import "hardhat/console.sol";
 /// @title A controller for the entire club sale
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
-contract Sale is Ownable {
+contract Sale is Ownable, Pausable {
   /// @notice All the merkle roots - whitelist address and advisor addresses
   bytes32 private whitelistMerkleRoot;
   bytes32 private advisorMerkleRoot;
@@ -102,7 +103,7 @@ contract Sale is Ownable {
 
   ///  @notice - For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6666 keys
 
-  function buyPostSale() public payable hasSaleEnded {
+  function buyPostSale() public payable hasSaleEnded whenNotPaused {
     require(msg.value >= mintPrice, "Insufficient payment");
     require(publicKeyMintCount < PUBLICKEYLIMIT, "Mint Limit Reached");
     publicKeyMintCount++;
@@ -110,7 +111,7 @@ contract Sale is Ownable {
   }
 
   /// @notice For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6969 keys
-  function buyKeyPostSale() public payable hasSaleEnded {
+  function buyKeyPostSale() public payable hasSaleEnded whenNotPaused {
     require(msg.value >= mintPrice, "Insufficient payment");
 
     keysContract.mintKeyToUser(msg.sender);
@@ -119,7 +120,11 @@ contract Sale is Ownable {
   }
 
   /// @notice To swap the key for scroll on reveal
-  function sellKeyForScroll(uint256 _tokenId) external canKeySwapped {
+  function sellKeyForScroll(uint256 _tokenId)
+    external
+    canKeySwapped
+    whenNotPaused
+  {
     keysContract.burnKeyOfUser(_tokenId, msg.sender);
 
     scrollContract.mint(msg.sender, _tokenId);
@@ -128,7 +133,7 @@ contract Sale is Ownable {
   }
 
   /// @notice minting unminted tokens to treasury
-  function mintLeftOvers(address owner) external onlyOwner {
+  function mintLeftOvers(address owner) external onlyOwner whenNotPaused {
     // TODO : EIP 2809 implementation
     for (
       uint256 i = 0;
@@ -146,7 +151,7 @@ contract Sale is Ownable {
 
   /// @notice It sets the timestamp for when key swapping for scrolls is available
   /// @dev I noticed that the property `startKeyToScrollSwapTimestamp` was never set anywhere else
-  /// TODO: To verify with the team if do we need to be able to set the timestamp for key swapping anytime or just once?
+
   function setStartKeyToScrollSwapTimestamp(uint256 _timestamp)
     external
     onlyOwner
@@ -188,5 +193,17 @@ contract Sale is Ownable {
 
   function setStartKeyScrollSwap(uint256 _startKeyToScroll) external onlyOwner {
     startKeyToScrollSwapTimestamp = _startKeyToScroll;
+  }
+
+  // ***************
+  // PAUSE FUNCTIONS
+  // ***************
+
+  function pauseContract() external onlyOwner whenNotPaused {
+    _pause();
+  }
+
+  function unpauseContract() external onlyOwner whenPaused {
+    _unpause();
   }
 }
