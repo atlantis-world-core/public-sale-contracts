@@ -19,7 +19,7 @@ contract ScrollContract is
 {
   bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
 
-  string internal baseURI = "";
+  string internal baseURI;
 
   mapping(address => mapping(uint256 => Scroll)) private userScroll;
 

@@ -1,10 +1,10 @@
 import { useMerkleHelper } from "../helpers/merkle";
 import { fromUnixTimestamp, toUnixTimestamp } from "../helpers/time";
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import MerkleTree from "merkletreejs";
-import { KeysContract, Sale, ScrollContract } from "../typechain";
+import { Sale } from "../typechain";
 import {
   deployMockContract,
   MockContract,
@@ -15,9 +15,8 @@ import {
 } from "../helpers/whitelist";
 
 import SaleABI from "../artifacts/contracts/Sale.sol/Sale.json";
-import KeysContractABI from "../artifacts/contracts/Keys.sol/KeysContract.json";
-import ScrollContractABI from "../artifacts/contracts/Scroll.sol/ScrollContract.json";
 import { BigNumber } from "@ethersproject/bignumber";
+import { Contract } from "@ethersproject/contracts";
 
 export type SetupArgs = {
   saleStart?: BigNumber;
@@ -38,13 +37,11 @@ describe("Sale", () => {
 
   // contracts
   let saleContract: Sale;
-  let keysContract: KeysContract;
-  let scrollContract: ScrollContract;
+  let keysContract: Contract;
+  let scrollContract: Contract;
 
   // mock contracts
   let mockSaleContract: MockContract;
-  let mockKeysContract: MockContract;
-  let mockScrollContract: MockContract;
 
   // sale timestamps
   let startSaleBlockTimestamp: BigNumber = toUnixTimestamp("2021-12-31");
@@ -152,18 +149,18 @@ describe("Sale", () => {
     // TODO: Should be deployed using proxy
     const KeysContract = await ethers.getContractFactory("KeysContract");
     keysContract = await KeysContract.deploy(saleContract.address);
-    mockKeysContract = await deployMockContract(owner, KeysContractABI.abi);
     await keysContract.deployed();
     await saleContract.setKeysAddress(keysContract.address);
 
     // ScrollContract deploy
     // TODO: Should be deployed using proxy
     const ScrollContract = await ethers.getContractFactory("ScrollContract");
-    scrollContract = await ScrollContract.deploy();
-    mockScrollContract = await deployMockContract(owner, ScrollContractABI.abi);
-    await scrollContract.deployed();
+    scrollContract = await upgrades.deployProxy(
+      ScrollContract,
+      [saleContract.address],
+      { initializer: "initialize" }
+    );
     await saleContract.setScollAddress(scrollContract.address);
-    await scrollContract.initialize(saleContract.address);
 
     return saleContract;
   };
