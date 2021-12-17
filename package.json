@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.4.0",
-    "@openzeppelin/contracts-upgradeable": "^4.4.0",
+    "@openzeppelin/contracts-upgradeable": "^4.4.1",
     "axios": "^0.24.0",
     "keccak256": "^1.0.3",
     "merkletreejs": "^0.2.27",
