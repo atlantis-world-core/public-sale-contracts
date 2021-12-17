@@ -101,20 +101,52 @@ contract Sale is Ownable, Pausable {
     _;
   }
 
-  ///  @notice - For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6666 keys
+  /**
+   * @param sender - the address whose leaf hash needs to be generated
+   * @return the hash value of the sender address
+   */
+  function leaf(address sender) internal pure returns (bytes32) {
+    return keccak256(abi.encodePacked(sender));
+  }
 
-  function buyPostSale() public payable hasSaleEnded whenNotPaused {
+  /**
+   * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
+   * @param proof - Merkle proof for the Advisory Merkle Tree
+   */
+  function preMint(bytes32[] calldata proof) external {
+    require(
+      MerkleProof.verify(proof, advisorMerkleRoot, leaf(msg.sender)),
+      "not in the advisory list"
+    );
+    require(advisoryKeyLimitCount < ADVISORYKEYLIMIT, "Limit Reached");
+    advisoryKeyLimitCount++;
+    keysContract.mintKeyToUser(msg.sender);
+  }
+
+  /**
+   * @notice - for buying during the public sale, for addresses whitelisted for the sale
+   * @param proof - Merkle proof fot the whiteListMerkleRoot
+   */
+  function buyKeyFromSale(bytes32[] calldata proof)
+    external
+    payable
+    isSaleOnGoing
+  {
+    require(
+      MerkleProof.verify(proof, whitelistMerkleRoot, leaf(msg.sender)),
+      "Not Eligible"
+    );
     require(msg.value >= mintPrice, "Insufficient payment");
-    require(publicKeyMintCount < PUBLICKEYLIMIT, "Mint Limit Reached");
-    publicKeyMintCount++;
+
     keysContract.mintKeyToUser(msg.sender);
   }
 
   /// @notice For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6969 keys
   function buyKeyPostSale() public payable hasSaleEnded whenNotPaused {
     require(msg.value >= mintPrice, "Insufficient payment");
-
+    require(publicKeyMintCount < PUBLICKEYLIMIT, "Mint Limit Reached");
     keysContract.mintKeyToUser(msg.sender);
+    publicKeyMintCount++;
 
     emit KeyPurchasedOnPostSale(msg.sender);
   }
