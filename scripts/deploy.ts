@@ -1,12 +1,7 @@
 import hre, { ethers } from "hardhat";
 import * as dotenv from "dotenv";
-import { utils } from "ethers";
 import axios from "axios";
-
-export async function getCurrentGas(apiKey: string) {
-  const url = `https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=${apiKey}`;
-  return parseInt((await axios.get(url)).data.result.ProposeGasPrice);
-}
+dotenv.config();
 
 async function main() {
   console.log("Deploying Sale Contrac");

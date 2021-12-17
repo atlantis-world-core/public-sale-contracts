@@ -18,7 +18,6 @@ contract ScrollContract is
   ERC721EnumerableUpgradeable,
   AccessControlUpgradeable,
   OwnableUpgradeable,
-  ERC2981ContractWideRoyalties,
   RoyaltiesV2Impl
 {
   bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
@@ -43,20 +42,6 @@ contract ScrollContract is
     _safeMint(user, tokenId);
   }
 
-  /// @notice rarity fee
-  function transferFrom(
-    address from,
-    address to,
-    uint256 tokenId
-  ) public override {
-    require(
-      _isApprovedOrOwner(_msgSender(), tokenId),
-      "ERC721: transfer caller is not owner nor approved"
-    );
-
-    _transfer(from, to, tokenId);
-  }
-
   /// @notice to set the BaseURI value
   function _baseURI() internal view override returns (string memory) {
     return baseURI;
@@ -65,28 +50,6 @@ contract ScrollContract is
   /// @notice to set the BaseURI value
   function setTokenURI(string calldata uri) public onlyOwner {
     baseURI = uri;
-  }
-
-  /// @dev See {IERC165-supportsInterface}.
-  function supportsInterface(bytes4 interfaceId)
-    public
-    view
-    override(ERC721EnumerableUpgradeable, AccessControlUpgradeable)
-    returns (bool)
-  {
-    return
-      interfaceId == type(IERC721Upgradeable).interfaceId ||
-      interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
-      super.supportsInterface(interfaceId);
-  }
-
-  // @notice this will use internal functions to set EIP 2981
-  function setRoyaltyInfo(address _royaltyAddress, uint256 _percentage)
-    public
-    onlyOwner
-  {
-    _setRoyalties(_royaltyAddress, _percentage);
-    emit UpdatedRoyalties(_royaltyAddress, _percentage);
   }
 
   // *********
@@ -106,11 +69,12 @@ contract ScrollContract is
     _saveRoyalties(_tokenId, _royalties);
   }
 
+  /// @dev See {IERC165-supportsInterface}.
   function supportsInterface(bytes4 interfaceId)
     public
     view
     virtual
-    override(ERC721)
+    override(ERC721EnumerableUpgradeable, AccessControlUpgradeable)
     returns (bool)
   {
     if (interfaceId == LibRoyaltiesV2._INTERFACE_ID_ROYALTIES) {
