@@ -14,10 +14,16 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
 
   bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
 
-  string internal baseURI = "";
+  string internal baseURI;
 
   /// @notice The current mint count
   uint256 private mintCount = 0;
+
+  /// @notice Emits when a Key gets minted to a user
+  event KeyMinted(address user);
+
+  /// @notice Emits when a Key gets burned by a user
+  event KeyBurned(uint256 tokenId, address user);
 
   /// @notice Validates if the given address is not an empty address
   modifier notAddressZero(address _address) {
@@ -33,6 +39,7 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
     notAddressZero(_saleContract)
   {
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
+    _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
   }
 
   /**
@@ -63,6 +70,8 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
 
     mintCount++;
     _safeMint(_user, mintCount);
+
+    emit KeyMinted(_user);
   }
 
   /**
@@ -77,6 +86,8 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
     require(ownerOf(_tokenId) == _user, "Not the owner of the NFT");
 
     _burn(_tokenId);
+
+    emit KeyBurned(_tokenId, _user);
   }
 
   /// @notice To set the BaseURI value

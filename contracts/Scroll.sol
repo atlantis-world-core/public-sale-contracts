@@ -22,8 +22,10 @@ contract ScrollContract is
 {
   bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
 
-  /// @dev It was never set or called from anywhere
   event UpdatedRoyalties(address newRoyaltyAddress, uint256 newPercentage);
+
+  /// @notice Emits when a scroll gets minted
+  event ScrollMinted(address user);
 
   string internal baseURI;
 
@@ -32,7 +34,6 @@ contract ScrollContract is
   function initialize(address _saleContract) public initializer {
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
     _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
-    // grantRole(SALE, _saleContract);
     __ERC721_init("Scroll", "SCR");
   }
 
@@ -45,6 +46,8 @@ contract ScrollContract is
     require(address(0x0) != _user, "Must not be an empty address");
 
     _safeMint(_user, _tokenId);
+
+    emit ScrollMinted(_user);
   }
 
   /// @notice To set the BaseURI value
