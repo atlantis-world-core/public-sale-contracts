@@ -200,13 +200,18 @@ contract Sale is Ownable, Pausable {
   }
 
   /// @notice Minting unminted tokens to treasury
-  function mintLeftOvers() external onlyOwner whenNotPaused {
+  /// @param _treasuryAddress The treasury address for Atlantis World
+  function mintLeftOvers(address _treasuryAddress)
+    external
+    onlyOwner
+    whenNotPaused
+  {
     // TODO: EIP 2809 implementation
     for (
       uint256 i = 0;
       i < 6969 - (publicKeyMintCount + advisoryKeyLimitCount);
       i++
-    ) _keysContract.mintKeyToUser(owner());
+    ) _keysContract.mintKeyToUser(_treasuryAddress);
 
     publicKeyMintCount = 6666;
     advisoryKeyLimitCount = 303;
