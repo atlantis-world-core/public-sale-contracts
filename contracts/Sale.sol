@@ -3,6 +3,7 @@ pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IKeys} from "./interface/IKeys.sol";
 import {IScroll} from "./interface/IScroll.sol";
@@ -10,7 +11,7 @@ import {IScroll} from "./interface/IScroll.sol";
 /// @title A controller for the entire club sale
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
-contract Sale is Ownable, Pausable {
+contract Sale is Ownable, Pausable, ReentrancyGuard {
   /// @notice key contracts
   IKeys private _keysContract;
   IScroll private _scrollContract;
@@ -126,7 +127,7 @@ contract Sale is Ownable, Pausable {
    * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
    * @param _proof Merkle proof for the advisory list merkle root
    */
-  function preMint(bytes32[] calldata _proof) external {
+  function preMint(bytes32[] calldata _proof) external nonReentrant {
     require(
       MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender)),
       "Not in the advisory list"
@@ -152,6 +153,7 @@ contract Sale is Ownable, Pausable {
   function buyKeyFromSale(bytes32[] calldata _proof)
     external
     payable
+    nonReentrant
     canAffordMintPrice
     isSaleOnGoing
   {
@@ -173,6 +175,7 @@ contract Sale is Ownable, Pausable {
   function buyKeyPostSale()
     public
     payable
+    nonReentrant
     canAffordMintPrice
     hasSaleEnded
     whenNotPaused
@@ -191,6 +194,7 @@ contract Sale is Ownable, Pausable {
   /// @notice To swap the key for scroll on reveal
   function sellKeyForScroll(uint256 _tokenId)
     external
+    nonReentrant
     canKeySwapped
     whenNotPaused
   {
@@ -205,6 +209,7 @@ contract Sale is Ownable, Pausable {
   /// @param _treasuryAddress The treasury address for Atlantis World
   function mintLeftOvers(address _treasuryAddress)
     external
+    nonReentrant
     onlyOwner
     whenNotPaused
   {
