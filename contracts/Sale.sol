@@ -12,8 +12,8 @@ import {IScroll} from "./interface/IScroll.sol";
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
 contract Sale is Ownable, Pausable {
   /// @notice key contracts
-  IKeys private keysContract;
-  IScroll private scrollContract;
+  IKeys private _keysContract;
+  IScroll private _scrollContract;
 
   /// @notice All the merkle roots - whitelist address and advisor addresses
   bytes32 private whitelistMerkleRoot;
@@ -140,7 +140,7 @@ contract Sale is Ownable, Pausable {
     // minting, otherwise vulnerable for reentrancy attack
     advisoryKeyLimitCount++;
 
-    keysContract.mintKeyToUser(msg.sender);
+    _keysContract.mintKeyToUser(msg.sender);
   }
 
   /**
@@ -158,7 +158,7 @@ contract Sale is Ownable, Pausable {
       "Not eligible"
     );
 
-    keysContract.mintKeyToUser(msg.sender);
+    _keysContract.mintKeyToUser(msg.sender);
 
     emit KeyWhitelistMinted(msg.sender);
   }
@@ -181,7 +181,7 @@ contract Sale is Ownable, Pausable {
     // minting, otherwise vulnerable for reentrancy attack
     publicKeyMintCount++;
 
-    keysContract.mintKeyToUser(msg.sender);
+    _keysContract.mintKeyToUser(msg.sender);
 
     emit KeyPublicMinted(msg.sender);
   }
@@ -192,9 +192,9 @@ contract Sale is Ownable, Pausable {
     canKeySwapped
     whenNotPaused
   {
-    keysContract.burnKeyOfUser(_tokenId, msg.sender);
+    _keysContract.burnKeyOfUser(_tokenId, msg.sender);
 
-    scrollContract.mint(msg.sender, _tokenId);
+    _scrollContract.mint(msg.sender, _tokenId);
 
     emit KeySwapped(msg.sender, _tokenId);
   }
@@ -206,7 +206,7 @@ contract Sale is Ownable, Pausable {
       uint256 i = 0;
       i < 6969 - (publicKeyMintCount + advisoryKeyLimitCount);
       i++
-    ) keysContract.mintKeyToUser(owner());
+    ) _keysContract.mintKeyToUser(owner());
 
     publicKeyMintCount = 6666;
     advisoryKeyLimitCount = 303;
@@ -243,7 +243,7 @@ contract Sale is Ownable, Pausable {
     onlyOwner
     notAddressZero(_address)
   {
-    keysContract = IKeys(_address);
+    _keysContract = IKeys(_address);
 
     emit NewKeysAddress(_address);
   }
@@ -254,7 +254,7 @@ contract Sale is Ownable, Pausable {
     onlyOwner
     notAddressZero(_address)
   {
-    scrollContract = IScroll(_address);
+    _scrollContract = IScroll(_address);
 
     emit NewScrollAddress(_address);
   }
