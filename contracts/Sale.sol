@@ -82,7 +82,7 @@ contract Sale is Ownable, Pausable {
 
   /// @notice Validates if the given address is not an empty address
   modifier notAddressZero(address _address) {
-    require(address(0) != _address, "Must not be an empty address");
+    require(address(0x0) != _address, "Must not be an empty address");
     _;
   }
 

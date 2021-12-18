@@ -147,7 +147,7 @@ describe("Sale", () => {
 
     // Keys contract deploy
     // TODO: Should be deployed using proxy
-    const KeysContract = await ethers.getContractFactory("KeysContract");
+    const KeysContract = await ethers.getContractFactory("Keys");
     keysContract = await KeysContract.deploy(saleContract.address);
     await keysContract.deployed();
     await saleContract.setKeysAddress(keysContract.address);
@@ -216,8 +216,12 @@ describe("Sale", () => {
       ).to.be.revertedWith("Insufficient payment");
     });
 
-    it(`SHOULD revert with "You weren't whitelisted", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
+    it(`SHOULD revert with "Not eligible", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
       // arrange
+      let saleContract = await deploySaleContract(
+        toUnixTimestamp("2021-12-01"),
+        toUnixTimestamp("2022-01-31")
+      );
       saleContract = saleContract.connect(minter);
       const badMerkleProof: string[] = [];
       const overrides = {
@@ -228,7 +232,7 @@ describe("Sale", () => {
       // act & assert
       await expect(
         saleContract.buyKeyFromSale(badMerkleProof, overrides)
-      ).to.be.revertedWith("You weren't whitelisted");
+      ).to.be.revertedWith("Not eligible");
     });
 
     it(`SHOULD revert with "Sale is over", WHEN GIVEN a valid merkle proof AND the sale time range is from the past`, async () => {
@@ -263,7 +267,7 @@ describe("Sale", () => {
           from: minter.address,
           value: validMintPayment,
         })
-      ).to.emit(saleContract, "KeyPurchasedOnSale").and.to.be.not.reverted;
+      ).to.emit(saleContract, "KeyWhitelistMinted").and.to.be.not.reverted;
     });
   });
 
@@ -464,13 +468,12 @@ describe("Sale", () => {
         saleContract.preMint(validAdvisorProof(advisor.address), {
           from: advisor.address,
         })
-      )
-        .to.emit(saleContract, "KeyAdvisorMinted")
+      ).to.emit(saleContract, "KeyAdvisorMinted")
         .and.not.to.be.revertedWith("Not in the advisory list");
     });
 
     it(`SHOULD emit event KeyAdvisorMinted AND NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
-      // // arrange
+      // arrange
       let saleContract = await deploySaleContract(
         toUnixTimestamp("2020-12-01"),
         toUnixTimestamp("2021-01-31")
