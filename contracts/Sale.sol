@@ -141,6 +141,8 @@ contract Sale is Ownable, Pausable {
     advisoryKeyLimitCount++;
 
     _keysContract.mintKeyToUser(msg.sender);
+
+    emit KeyAdvisorMinted(msg.sender);
   }
 
   /**
