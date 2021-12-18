@@ -44,8 +44,8 @@ export const testSetup = async () => {
   const advisorMerkleRoot = merkleHelper.createMerkleRoot(advisorMerkleTree);
 
   const deployContracts: DeployContractsFunction = async (
-    startSaleBlockTimestamp: BigNumber,
-    stopSaleBlockTimestamp: BigNumber
+    startSaleBlockTimestamp?: BigNumber,
+    stopSaleBlockTimestamp?: BigNumber
   ): Promise<DeployContractsFunctionResult> => {
     const SaleContract = await ethers.getContractFactory("Sale", {
       signer: owner,
@@ -53,8 +53,8 @@ export const testSetup = async () => {
     const saleContract = await SaleContract.deploy(
       whitelistMerkleRoot,
       advisorMerkleRoot,
-      startSaleBlockTimestamp,
-      stopSaleBlockTimestamp
+      startSaleBlockTimestamp ?? BigNumber.from(0),
+      stopSaleBlockTimestamp ?? BigNumber.from(0)
     );
     const mockSaleContract = await deployMockContract(owner, SaleABI.abi);
     await saleContract.deployed();

@@ -10,8 +10,8 @@ export type DeployContractsFunctionResult = {
 };
 
 export type DeployContractsFunction = (
-  startSaleBlockTimestamp: BigNumber,
-  stopSaleBlockTimestamp: BigNumber
+  startSaleBlockTimestamp?: BigNumber,
+  stopSaleBlockTimestamp?: BigNumber
 ) => Promise<DeployContractsFunctionResult>;
 
 export type TestSetupArgs = {
