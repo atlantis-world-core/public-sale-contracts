@@ -124,11 +124,11 @@ contract Sale is Ownable, Pausable {
 
   /**
    * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
-   * @param proof Merkle proof for the advisory list merkle root
+   * @param _proof Merkle proof for the advisory list merkle root
    */
-  function preMint(bytes32[] calldata proof) external {
+  function preMint(bytes32[] calldata _proof) external {
     require(
-      MerkleProof.verify(proof, advisorMerkleRoot, _leaf(msg.sender)),
+      MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender)),
       "Not in the advisory list"
     );
     require(
