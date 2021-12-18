@@ -111,6 +111,7 @@ export const testSetup = async () => {
   };
 
   return {
+    signers,
     owner,
     minter,
     advisor,
