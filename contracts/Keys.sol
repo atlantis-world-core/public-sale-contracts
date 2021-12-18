@@ -19,10 +19,19 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
   /// @notice The current mint count
   uint256 private mintCount = 0;
 
+  /// @notice Validates if the given address is not an empty address
+  modifier notAddressZero(address _address) {
+    require(address(0x0) != _address, "Must not be an empty address");
+    _;
+  }
+
   /**
    * @notice Sets the MINT and BURN role for the sale contract
    */
-  constructor(address _saleContract) ERC721("Keys", "Key") {
+  constructor(address _saleContract)
+    ERC721("Keys", "Key")
+    notAddressZero(_saleContract)
+  {
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
   }
 
@@ -45,7 +54,11 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
    * @notice Function to mint keys to the user, limited to max of 6969 keys
    * @dev The contract can be called form the sale contract only
    */
-  function mintKeyToUser(address _user) public onlyRole(SALE_CONTRACT_ROLE) {
+  function mintKeyToUser(address _user)
+    public
+    notAddressZero(_user)
+    onlyRole(SALE_CONTRACT_ROLE)
+  {
     require(mintCount < 6969, "All tokens minted");
 
     mintCount++;
@@ -58,6 +71,7 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
    */
   function burnKeyOfUser(uint256 _tokenId, address _user)
     public
+    notAddressZero(_user)
     onlyRole(SALE_CONTRACT_ROLE)
   {
     require(ownerOf(_tokenId) == _user, "Not the owner of the NFT");
