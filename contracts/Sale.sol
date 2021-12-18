@@ -2,37 +2,45 @@
 pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IKeys} from "./interface/IKeys.sol";
 import {IScroll} from "./interface/IScroll.sol";
-import "hardhat/console.sol";
 
 /// @title A controller for the entire club sale
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
 contract Sale is Ownable, Pausable {
+  /// @notice key contracts
+  IKeys private keysContract;
+  IScroll private scrollContract;
+
   /// @notice All the merkle roots - whitelist address and advisor addresses
   bytes32 private whitelistMerkleRoot;
   bytes32 private advisorMerkleRoot;
 
+  /// @notice The mint price for a key
   uint256 public mintPrice = 0.2 ether;
 
-  /// @notice 6666+303=6969 Total Supply
-  uint256 public constant PUBLICKEYLIMIT = 6666;
-  uint256 public constant ADVISORYKEYLIMIT = 303;
+  /// @notice 6666 + 303 = 6969 Total Supply
+  uint256 public constant PUBLIC_KEY_LIMIT = 6666;
 
-  uint256 publicKeyMintCount = 0;
-  uint256 advisoryKeyLimitCount = 0;
+  uint256 public constant ADVISORY_KEY_LIMIT = 303;
 
-  /// @notice Timestamps
+  /// @notice The current mint count from public users
+  uint256 public publicKeyMintCount = 0;
+
+  /// @notice The current mint count from advisory users
+  uint256 public advisoryKeyLimitCount = 0;
+
+  /// @notice The timestamp for when the alpha sale launches
   uint256 public startSaleBlockTimestamp;
-  uint256 public stopSaleBlockTimestamp;
-  uint256 public startKeyToScrollSwapTimestamp;
 
-  /// @notice key contracts
-  IKeys internal keysContract;
-  IScroll internal scrollContract;
+  /// @notice The timestamp for when the alpha sale stops
+  uint256 public stopSaleBlockTimestamp;
+
+  /// @notice The timestamp for when swapping keys for a scroll begins
+  uint256 public startKeyToScrollSwapTimestamp;
 
   /// @param _whitelistMerkleRoot The merkle root of whitelisted candidates
   /// @param _advisorMerkleRoot The merkle root of advisor addresses
@@ -55,25 +63,36 @@ contract Sale is Ownable, Pausable {
   event KeyAdvisorMinted(address sender);
 
   /// @notice Emits an event when a whitelisted user have minted
-  event KeyPurchasedOnSale(address sender);
+  event KeyWhitelistMinted(address sender);
 
   /// @notice Emits an event when someone have minted after the sale
-  event KeyPurchasedOnPostSale(address sender);
+  event KeyPublicMinted(address sender);
 
   /// @notice Emits an event when a key has been swapped for a scroll
   event KeySwapped(address sender, uint256 tokenId);
 
+  /// @notice Emits an event when a new Keys contract address has been set
   event NewKeysAddress(address keys);
 
+  /// @notice Emits an event when a new Scroll contract address has been set
   event NewScrollAddress(address scroll);
 
+  /// @notice Emits an event when a timestamp for key swapping for scroll has been set
   event NewStartKeyToScrollSwapTimestamp(uint256 timestamp);
 
-  modifier validAddress(address _address) {
+  /// @notice Validates if the given address is not an empty address
+  modifier notAddressZero(address _address) {
     require(address(0) != _address, "Must not be an empty address");
     _;
   }
 
+  /// @notice Validates if the sender has enough ether to mint a key
+  modifier canAffordMintPrice() {
+    require(msg.value >= mintPrice, "Insufficient payment");
+    _;
+  }
+
+  /// @notice Validates if the current block timestamp is still under the sale timestamp range
   modifier isSaleOnGoing() {
     require(
       block.timestamp >= startSaleBlockTimestamp,
@@ -83,11 +102,13 @@ contract Sale is Ownable, Pausable {
     _;
   }
 
+  /// @notice Validates if the current block timestamp is outside the sale timestamp range
   modifier hasSaleEnded() {
     require(block.timestamp > stopSaleBlockTimestamp, "Sale is ongoing");
     _;
   }
 
+  /// @notice Validates if the swapping of key for a scroll is enabled or for when a date is set
   modifier canKeySwapped() {
     // TODO: To verify with team
     require(
@@ -102,53 +123,67 @@ contract Sale is Ownable, Pausable {
   }
 
   /**
-   * @param sender - the address whose leaf hash needs to be generated
-   * @return the hash value of the sender address
-   */
-  function leaf(address sender) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked(sender));
-  }
-
-  /**
    * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
-   * @param proof - Merkle proof for the Advisory Merkle Tree
+   * @param proof Merkle proof for the advisory list merkle root
    */
   function preMint(bytes32[] calldata proof) external {
     require(
-      MerkleProof.verify(proof, advisorMerkleRoot, leaf(msg.sender)),
-      "not in the advisory list"
+      MerkleProof.verify(proof, advisorMerkleRoot, _leaf(msg.sender)),
+      "Not in the advisory list"
     );
-    require(advisoryKeyLimitCount < ADVISORYKEYLIMIT, "Limit Reached");
+    require(
+      advisoryKeyLimitCount < ADVISORY_KEY_LIMIT,
+      "Advisory mint limit reached"
+    );
+
+    // The `advisoryKeyLimitCount` state has to be mutated before
+    // minting, otherwise vulnerable for reentrancy attack
     advisoryKeyLimitCount++;
+
     keysContract.mintKeyToUser(msg.sender);
   }
 
   /**
-   * @notice - for buying during the public sale, for addresses whitelisted for the sale
-   * @param proof - Merkle proof fot the whiteListMerkleRoot
+   * @notice For buying during the public sale, for whitelisted addresses for the sale
+   * @param _proof Merkle proof for the whitelist merkle root
    */
-  function buyKeyFromSale(bytes32[] calldata proof)
+  function buyKeyFromSale(bytes32[] calldata _proof)
     external
     payable
+    canAffordMintPrice
     isSaleOnGoing
   {
     require(
-      MerkleProof.verify(proof, whitelistMerkleRoot, leaf(msg.sender)),
-      "Not Eligible"
+      MerkleProof.verify(_proof, whitelistMerkleRoot, _leaf(msg.sender)),
+      "Not eligible"
     );
-    require(msg.value >= mintPrice, "Insufficient payment");
 
     keysContract.mintKeyToUser(msg.sender);
+
+    emit KeyWhitelistMinted(msg.sender);
   }
 
-  /// @notice For general public to mint tokens, who weren't listed in the whitelist. Will only work for a max of 6969 keys
-  function buyKeyPostSale() public payable hasSaleEnded whenNotPaused {
-    require(msg.value >= mintPrice, "Insufficient payment");
-    require(publicKeyMintCount < PUBLICKEYLIMIT, "Mint Limit Reached");
-    keysContract.mintKeyToUser(msg.sender);
+  /**
+   * @notice
+   * For general public to mint tokens, who weren't listed in the
+   * whitelist. Will only work for a max of 6969 keys.
+   */
+  function buyKeyPostSale()
+    public
+    payable
+    canAffordMintPrice
+    hasSaleEnded
+    whenNotPaused
+  {
+    require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "Mint limit reached");
+
+    // The `publicKeyMintCount` state has to be mutated before
+    // minting, otherwise vulnerable for reentrancy attack
     publicKeyMintCount++;
 
-    emit KeyPurchasedOnPostSale(msg.sender);
+    keysContract.mintKeyToUser(msg.sender);
+
+    emit KeyPublicMinted(msg.sender);
   }
 
   /// @notice To swap the key for scroll on reveal
@@ -164,14 +199,14 @@ contract Sale is Ownable, Pausable {
     emit KeySwapped(msg.sender, _tokenId);
   }
 
-  /// @notice minting unminted tokens to treasury
-  function mintLeftOvers(address owner) external onlyOwner whenNotPaused {
-    // TODO : EIP 2809 implementation
+  /// @notice Minting unminted tokens to treasury
+  function mintLeftOvers() external onlyOwner whenNotPaused {
+    // TODO: EIP 2809 implementation
     for (
       uint256 i = 0;
       i < 6969 - (publicKeyMintCount + advisoryKeyLimitCount);
       i++
-    ) keysContract.mintKeyToUser(owner);
+    ) keysContract.mintKeyToUser(owner());
 
     publicKeyMintCount = 6666;
     advisoryKeyLimitCount = 303;
@@ -183,7 +218,6 @@ contract Sale is Ownable, Pausable {
 
   /// @notice It sets the timestamp for when key swapping for scrolls is available
   /// @dev I noticed that the property `startKeyToScrollSwapTimestamp` was never set anywhere else
-
   function setStartKeyToScrollSwapTimestamp(uint256 _timestamp)
     external
     onlyOwner
@@ -193,10 +227,12 @@ contract Sale is Ownable, Pausable {
     emit NewStartKeyToScrollSwapTimestamp(_timestamp);
   }
 
+  /// @notice Sets a new merkle root for all whitelisted addresses
   function setWhitelistMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
     whitelistMerkleRoot = _merkleRoot;
   }
 
+  /// @notice Sets a new merkle root for the advisory list
   function setAdvisorMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
     advisorMerkleRoot = _merkleRoot;
   }
@@ -205,7 +241,7 @@ contract Sale is Ownable, Pausable {
   function setKeysAddress(address _address)
     external
     onlyOwner
-    validAddress(_address)
+    notAddressZero(_address)
   {
     keysContract = IKeys(_address);
 
@@ -216,13 +252,15 @@ contract Sale is Ownable, Pausable {
   function setScollAddress(address _address)
     external
     onlyOwner
-    validAddress(_address)
+    notAddressZero(_address)
   {
     scrollContract = IScroll(_address);
 
     emit NewScrollAddress(_address);
   }
 
+  /// @dev This is a duplicate function, a setter was already written `setStartKeyToScrollSwapTimestamp`
+  /// TODO: To remove
   function setStartKeyScrollSwap(uint256 _startKeyToScroll) external onlyOwner {
     startKeyToScrollSwapTimestamp = _startKeyToScroll;
   }
@@ -237,5 +275,13 @@ contract Sale is Ownable, Pausable {
 
   function unpauseContract() external onlyOwner whenPaused {
     _unpause();
+  }
+
+  /**
+   * @param _sender The address whose leaf hash needs to be generated
+   * @return The hash value of the sender address
+   */
+  function _leaf(address _sender) internal pure returns (bytes32) {
+    return keccak256(abi.encodePacked(_sender));
   }
 }
