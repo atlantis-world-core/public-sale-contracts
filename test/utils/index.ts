@@ -60,13 +60,17 @@ export const testSetup = async () => {
     await saleContract.deployed();
 
     // Keys contract deploy
-    const KeysContract = await ethers.getContractFactory("Keys");
+    const KeysContract = await ethers.getContractFactory("Keys", {
+      signer: owner,
+    });
     const keysContract = await KeysContract.deploy(saleContract.address);
     await keysContract.deployed();
     await saleContract.setKeysAddress(keysContract.address);
 
     // ScrollContract deploy
-    const ScrollContract = await ethers.getContractFactory("ScrollContract");
+    const ScrollContract = await ethers.getContractFactory("ScrollContract", {
+      signer: owner,
+    });
     const scrollContract = await upgrades.deployProxy(
       ScrollContract,
       [saleContract.address],
