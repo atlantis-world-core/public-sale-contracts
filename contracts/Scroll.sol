@@ -28,7 +28,8 @@ contract ScrollContract is
 
   string internal baseURI;
 
-  /// @dev The address of the deployed Sale contract
+  /// @dev On initialize, it sets up the address of the deployed Sale contract
+  /// @param _saleContract The address of the deployed Sale contract
   function initialize(address _saleContract) public initializer {
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
     _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
