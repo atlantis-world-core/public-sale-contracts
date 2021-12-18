@@ -23,7 +23,6 @@ contract ScrollContract is
   bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
 
   /// @dev It was never set or called from anywhere
-  /// TODO: Needs to be emitted when a royal is updated or set
   event UpdatedRoyalties(address newRoyaltyAddress, uint256 newPercentage);
 
   string internal baseURI;
@@ -43,6 +42,8 @@ contract ScrollContract is
     override
     onlyRole(SALE_CONTRACT_ROLE)
   {
+    require(address(0x0) != _user, "Must not be an empty address");
+
     _safeMint(_user, _tokenId);
   }
 
