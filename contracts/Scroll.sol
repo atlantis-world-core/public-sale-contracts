@@ -35,6 +35,7 @@ contract ScrollContract is
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
     _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
     __ERC721_init("Scroll", "SCR");
+    __Ownable_init();
   }
 
   /// @notice Function to mint the scroll to user. Called by the sale contract after burning the key.

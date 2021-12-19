@@ -1,6 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { Sale, ScrollContract } from "../typechain";
 import { testSetup } from "./utils";
 import { DeployContractsFunction } from "./utils/types";
@@ -47,42 +47,7 @@ describe("ScrollContract", () => {
       const deployerAddress = await scrollContract.signer.getAddress();
       const ownerAddress = owner.address;
 
-      console.log(
-        scrollContract.address,
-        "|",
-        deployerAddress,
-        "==",
-        ownerAddress
-      );
-
       expect(deployerAddress).to.be.eq(ownerAddress);
-    });
-  });
-
-  describe("mint", () => {
-    it("SHOULD not revert WHEN called", async () => {
-      // TODO: Make this test pass, currently a failing test
-      // AssertionError: Expected transaction to be reverted with Hey, but 
-      // other exception was thrown: Error: VM Exception while processing 
-      // transaction: reverted with reason string 'AccessControl: account 
-      // 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266 is missing role 
-      // 0x9f566e66e3fe95040f2178cc6bf558ca13dd7af2eac028523bbf86acda6b390f'
-      
-      const [saleContractSignerAddress, scrollContractSignerAddress] =
-        await Promise.all([
-          saleContract.signer.getAddress(),
-          scrollContract.signer.getAddress(),
-        ]);
-
-      console.log({
-        ownerAddress: owner.address,
-        saleContractSignerAddress,
-        scrollContractSignerAddress,
-      });
-      
-      await expect(
-        scrollContract.connect(owner).mint(owner.address, 1)
-      ).to.be.revertedWith("Hey");
     });
   });
 
@@ -110,9 +75,7 @@ describe("ScrollContract", () => {
 
       const scrollContractOwner = await scrollContract.owner();
 
-      // 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 == 0x0000000000000000000000000000000000000000
-      // the deployed proxy contract does not have an owner, it's a zero address
-      console.log(owner.address, "==", scrollContractOwner);
+      expect(scrollContractOwner).to.be.equal(owner.address);
 
       await expect(
         scrollContract.setRoyalties(
@@ -121,7 +84,7 @@ describe("ScrollContract", () => {
           BigNumber.from(50),
           { from: owner.address }
         )
-      ).to.be.revertedWith("EHEHEHE");
+      ).to.emit(scrollContract, "RoyaltiesSet");
     });
   });
 });

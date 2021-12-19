@@ -76,7 +76,7 @@ export const testSetup = async () => {
       [saleContract.address],
       { initializer: "initialize" }
     );
-    await saleContract.setScollAddress(scrollContract.address);
+    await saleContract.setScrollAddress(scrollContract.address);
 
     return {
       saleContract,

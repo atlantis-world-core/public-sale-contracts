@@ -503,8 +503,8 @@ describe("Sale", () => {
       saleContract = saleContract.connect(owner);
 
       // act & assert
-      await expect(saleContract.setScollAddress(saleContract.address)).to.be.not
-        .reverted;
+      await expect(saleContract.setScrollAddress(saleContract.address)).to.be
+        .not.reverted;
     });
 
     it(`SHOULD revert with "Ownable: caller is not the owner", WHEN it's NOT the owner that makes the call`, async () => {
@@ -513,7 +513,7 @@ describe("Sale", () => {
 
       // act & assert
       await expect(
-        saleContract.setScollAddress(saleContract.address)
+        saleContract.setScrollAddress(saleContract.address)
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
@@ -523,7 +523,7 @@ describe("Sale", () => {
 
       // act & assert
       await expect(
-        saleContract.setScollAddress(ethers.constants.AddressZero)
+        saleContract.setScrollAddress(ethers.constants.AddressZero)
       ).to.be.revertedWith("Must not be an empty address");
     });
   });

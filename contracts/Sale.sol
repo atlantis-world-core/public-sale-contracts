@@ -261,7 +261,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   }
 
   /// @param _address Scroll contract address
-  function setScollAddress(address _address)
+  function setScrollAddress(address _address)
     external
     onlyOwner
     notAddressZero(_address)
