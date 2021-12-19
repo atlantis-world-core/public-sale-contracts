@@ -4,6 +4,7 @@ pragma solidity ^0.8.10;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interface/IScroll.sol";
 import "./lib/impl/RoyaltiesV2Impl.sol";
@@ -18,7 +19,8 @@ contract ScrollContract is
   ERC721EnumerableUpgradeable,
   AccessControlUpgradeable,
   OwnableUpgradeable,
-  RoyaltiesV2Impl
+  RoyaltiesV2Impl,
+  ReentrancyGuardUpgradeable
 {
   bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
 
@@ -42,6 +44,7 @@ contract ScrollContract is
   function mint(address _user, uint256 _tokenId)
     public
     override
+    nonReentrant
     onlyRole(SALE_CONTRACT_ROLE)
   {
     require(address(0x0) != _user, "Must not be an empty address");
@@ -92,5 +95,11 @@ contract ScrollContract is
     }
 
     return super.supportsInterface(_interfaceId);
+  }
+
+  /// @notice Just a fund safe function
+  function withdraw(address _targetAddress) external onlyOwner {
+    address payable targetAddress = payable(_targetAddress);
+    targetAddress.transfer(address(this).balance);
   }
 }

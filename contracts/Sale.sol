@@ -209,7 +209,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /// @param _treasuryAddress The treasury address for Atlantis World
   function mintLeftOvers(address _treasuryAddress)
     external
-    nonReentrant
     onlyOwner
     whenNotPaused
   {
@@ -295,5 +294,10 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   function _leaf(address _sender) internal pure returns (bytes32) {
     return keccak256(abi.encodePacked(_sender));
+  }
+
+  function withdraw(address _targetAddress) external onlyOwner {
+    address payable targetAddress = payable(_targetAddress);
+    targetAddress.transfer(address(this).balance);
   }
 }
