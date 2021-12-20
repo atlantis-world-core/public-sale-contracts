@@ -46,6 +46,8 @@ function generateMerkleRoots() {
 }
 
 async function main() {
+  const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
+
   console.log("Deploying Sale Contract");
 
   const {
@@ -77,8 +79,6 @@ async function main() {
     // eslint-disable-next-line no-process-exit
     process.exit(1);
   }
-
-  const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
 
   // Sale contract
   const SaleContract = await ethers.getContractFactory("Sale");
