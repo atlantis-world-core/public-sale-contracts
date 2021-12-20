@@ -34,18 +34,23 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
+    // localhost: {
+    //   gas: 2100000,
+    //   gasPrice: 8000000000,
+    //   accounts: [""]
+    // },
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
-    mumbaiTestnet: {
+    mumbai: {
       url: process.env.MATIC_MUMBAI_URL || "",
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
     polygon: {
-      url: process.env.POLYGON_MAINNET || "",
+      url: process.env.POLYGON_MAINNET_URL || "",
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
