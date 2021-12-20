@@ -29,7 +29,7 @@ async function main() {
     name,
     config: { chainId },
   } = hre.network;
-  console.log(`🔌 Connected to ${name} ChainID: ${chainId}`);
+  console.log(`🔌 Connected to "${name}" ChainID: ${chainId}`);
 
   const [deployer] = await ethers.getSigners();
   console.log("Deploying using", deployer.toJSON());
@@ -63,7 +63,7 @@ async function main() {
   console.info(`[KeyContract] expected address: "${keyContract.address}"`);
   await keyContract.deployed();
   console.info(
-    `[KeyContract] 💡 Key contract deployed at address "${saleContract.address}"\n`
+    `[KeyContract] 💡 Key contract deployed at address "${keyContract.address}"\n`
   );
 
   // Scroll proxy contract
