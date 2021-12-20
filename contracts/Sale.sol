@@ -12,41 +12,60 @@ import {IScroll} from "./interface/IScroll.sol";
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
 contract Sale is Ownable, Pausable, ReentrancyGuard {
-  /// @notice key contracts
+  /**
+   * @notice Key contracts
+   */
   IKeys private _keysContract;
   IScroll private _scrollContract;
 
-  /// @notice All the merkle roots - whitelist address and advisor addresses
+  /**
+   * @notice All the merkle roots - whitelist address and advisor addresses
+   */
   bytes32 private whitelistMerkleRoot;
   bytes32 private advisorMerkleRoot;
 
-  /// @notice The mint price for a key
+  /**
+   * @notice The mint price for a key
+   */
   uint256 public mintPrice = 0.2 ether;
 
-  /// @notice 6666 + 303 = 6969 Total Supply
+  /**
+   * @notice 6666 + 303 = 6969 Total Supply
+   */
   uint256 public constant PUBLIC_KEY_LIMIT = 6666;
-
   uint256 public constant ADVISORY_KEY_LIMIT = 303;
 
-  /// @notice The current mint count from public users
+  /**
+   * @notice The current mint count from public users
+   */
   uint256 public publicKeyMintCount = 0;
 
-  /// @notice The current mint count from advisory users
+  /**
+   * @notice The current mint count from advisory users
+   */
   uint256 public advisoryKeyLimitCount = 0;
 
-  /// @notice The timestamp for when the alpha sale launches
+  /**
+   * @notice The timestamp for when the alpha sale launches
+   */
   uint256 public startSaleBlockTimestamp;
 
-  /// @notice The timestamp for when the alpha sale stops
+  /**
+   * @notice The timestamp for when the alpha sale stops
+   */
   uint256 public stopSaleBlockTimestamp;
 
-  /// @notice The timestamp for when swapping keys for a scroll begins
+  /**
+   * @notice The timestamp for when swapping keys for a scroll begins
+   */
   uint256 public startKeyToScrollSwapTimestamp;
 
-  /// @param _whitelistMerkleRoot The merkle root of whitelisted candidates
-  /// @param _advisorMerkleRoot The merkle root of advisor addresses
-  /// @param _startSaleBlockTimestamp The start sale timestamp
-  /// @param _stopSaleBlockTimestamp The stop sale timestamp
+  /**
+   * @param _whitelistMerkleRoot The merkle root of whitelisted candidates
+   * @param _advisorMerkleRoot The merkle root of advisor addresses
+   * @param _startSaleBlockTimestamp The start sale timestamp
+   * @param _stopSaleBlockTimestamp The stop sale timestamp
+   */
   constructor(
     bytes32 _whitelistMerkleRoot,
     bytes32 _advisorMerkleRoot,
@@ -60,40 +79,60 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     stopSaleBlockTimestamp = _stopSaleBlockTimestamp;
   }
 
-  /// @notice Emits an event when an advisor have minted
+  /**
+   * @notice Emits an event when an advisor have minted
+   */
   event KeyAdvisorMinted(address sender);
 
-  /// @notice Emits an event when a whitelisted user have minted
+  /**
+   * @notice Emits an event when a whitelisted user have minted
+   */
   event KeyWhitelistMinted(address sender);
 
-  /// @notice Emits an event when someone have minted after the sale
+  /**
+   * @notice Emits an event when someone have minted after the sale
+   */
   event KeyPublicMinted(address sender);
 
-  /// @notice Emits an event when a key has been swapped for a scroll
+  /**
+   * @notice Emits an event when a key has been swapped for a scroll
+   */
   event KeySwapped(address sender, uint256 tokenId);
 
-  /// @notice Emits an event when a new Keys contract address has been set
+  /**
+   * @notice Emits an event when a new Keys contract address has been set
+   */
   event NewKeysAddress(address keys);
 
-  /// @notice Emits an event when a new Scroll contract address has been set
+  /**
+   * @notice Emits an event when a new Scroll contract address has been set
+   */
   event NewScrollAddress(address scroll);
 
-  /// @notice Emits an event when a timestamp for key swapping for scroll has been set
+  /**
+   * @notice Emits an event when a timestamp for key swapping for scroll has been set
+   */
   event NewStartKeyToScrollSwapTimestamp(uint256 timestamp);
 
-  /// @notice Validates if the given address is not an empty address
+  /**
+   * @notice Validates if the given address is not an empty address
+   */
   modifier notAddressZero(address _address) {
     require(address(0x0) != _address, "Must not be an empty address");
     _;
   }
 
-  /// @notice Validates if the sender has enough ether to mint a key
+  /**
+   * @notice Validates if the sender has enough ether to mint a key
+   */
   modifier canAffordMintPrice() {
     require(msg.value >= mintPrice, "Insufficient payment");
     _;
   }
 
-  /// @notice Validates if the current block timestamp is still under the sale timestamp range
+  /**
+   * @notice Validates if the current block timestamp is still under the sale timestamp range
+   */
   modifier isSaleOnGoing() {
     require(
       block.timestamp >= startSaleBlockTimestamp,
@@ -103,16 +142,20 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     _;
   }
 
-  /// @notice Validates if the current block timestamp is outside the sale timestamp range
+  /**
+   * @notice Validates if the current block timestamp is outside the sale timestamp range
+   */
   modifier hasSaleEnded() {
     require(block.timestamp > stopSaleBlockTimestamp, "Sale is ongoing");
     _;
   }
 
-  /// @notice Validates if the swapping of key for a scroll is enabled or for when a date is set
+  /**
+   * @notice Validates if the swapping of key for a scroll is enabled or for when a date is set
+   */
   modifier canKeySwapped() {
-    // TODO: To verify with team
     require(
+      // TODO: To verify with team
       startKeyToScrollSwapTimestamp != 0,
       "A date for swapping hasn't been set"
     );
@@ -191,7 +234,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     emit KeyPublicMinted(msg.sender);
   }
 
-  /// @notice To swap the key for scroll on reveal
+  /**
+   * @notice To swap the key for scroll on reveal
+   */
   function sellKeyForScroll(uint256 _tokenId)
     external
     nonReentrant
@@ -205,8 +250,10 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     emit KeySwapped(msg.sender, _tokenId);
   }
 
-  /// @notice Minting unminted tokens to treasury
-  /// @param _treasuryAddress The treasury address for Atlantis World
+  /**
+   * @notice Minting unminted tokens to treasury
+   * @param _treasuryAddress The treasury address for Atlantis World
+   */
   function mintLeftOvers(address _treasuryAddress)
     external
     onlyOwner
@@ -227,8 +274,10 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   // SET FUNCTIONS
   // *************
 
-  /// @notice It sets the timestamp for when key swapping for scrolls is available
-  /// @dev I noticed that the property `startKeyToScrollSwapTimestamp` was never set anywhere else
+  /**
+   * @notice It sets the timestamp for when key swapping for scrolls is available
+   * @dev I noticed that the property `startKeyToScrollSwapTimestamp` was never set anywhere else
+   */
   function setStartKeyToScrollSwapTimestamp(uint256 _timestamp)
     external
     onlyOwner
@@ -238,17 +287,23 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     emit NewStartKeyToScrollSwapTimestamp(_timestamp);
   }
 
-  /// @notice Sets a new merkle root for all whitelisted addresses
+  /**
+   * @notice Sets a new merkle root for all whitelisted addresses
+   */
   function setWhitelistMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
     whitelistMerkleRoot = _merkleRoot;
   }
 
-  /// @notice Sets a new merkle root for the advisory list
+  /**
+   * @notice Sets a new merkle root for the advisory list
+   */
   function setAdvisorMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
     advisorMerkleRoot = _merkleRoot;
   }
 
-  /// @param _address Key contract address
+  /**
+   * @param _address Key contract address
+   */
   function setKeysAddress(address _address)
     external
     onlyOwner
@@ -259,7 +314,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     emit NewKeysAddress(_address);
   }
 
-  /// @param _address Scroll contract address
+  /**
+   * @param _address Scroll contract address
+   */
   function setScrollAddress(address _address)
     external
     onlyOwner
@@ -268,12 +325,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     _scrollContract = IScroll(_address);
 
     emit NewScrollAddress(_address);
-  }
-
-  /// @dev This is a duplicate function, a setter was already written `setStartKeyToScrollSwapTimestamp`
-  /// TODO: To remove
-  function setStartKeyScrollSwap(uint256 _startKeyToScroll) external onlyOwner {
-    startKeyToScrollSwapTimestamp = _startKeyToScroll;
   }
 
   // ***************

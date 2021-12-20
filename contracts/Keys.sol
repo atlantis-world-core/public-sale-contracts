@@ -16,16 +16,24 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
 
   string internal baseURI;
 
-  /// @notice The current mint count
+  /**
+   * @notice The current mint count
+   */
   uint256 private mintCount = 0;
 
-  /// @notice Emits when a Key gets minted to a user
+  /**
+   * @notice Emits when a Key gets minted to a user
+   */
   event KeyMinted(address user);
 
-  /// @notice Emits when a Key gets burned by a user
+  /**
+   * @notice Emits when a Key gets burned by a user
+   */
   event KeyBurned(uint256 tokenId, address user);
 
-  /// @notice Validates if the given address is not an empty address
+  /**
+   * @notice Validates if the given address is not an empty address
+   */
   modifier notAddressZero(address _address) {
     require(address(0x0) != _address, "Must not be an empty address");
     _;
@@ -90,12 +98,16 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
     emit KeyBurned(_tokenId, _user);
   }
 
-  /// @notice To set the BaseURI value
+  /**
+   * @notice To set the `baseURI` value
+   */
   function _baseURI() internal view override returns (string memory) {
     return baseURI;
   }
 
-  /// @notice To set the BaseURI value
+  /**
+   * @notice To set the `baseURI` value
+   */
   function setTokenURI(string calldata _uri) public onlyOwner {
     baseURI = _uri;
   }
