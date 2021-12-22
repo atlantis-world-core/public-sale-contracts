@@ -34,11 +34,10 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    // localhost: {
-    //   gas: 2100000,
-    //   gasPrice: 8000000000,
-    //   accounts: [""]
-    // },
+    localhost: {
+      gas: 2100000,
+      gasPrice: 8000000000,
+    },
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
       accounts:
