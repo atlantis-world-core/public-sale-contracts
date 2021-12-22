@@ -51,10 +51,6 @@ describe("ScrollContract", () => {
     });
   });
 
-  describe("setTokenURI", () => {
-    // TODO: Write a unit test to test against onlyOwner modifier
-  });
-
   describe("setRoyalties", () => {
     it(`SHOULD revert with "Ownable: caller is not the owner", WHEN the caller is NOT the owner/deployer of the contract`, async () => {
       scrollContract = scrollContract.connect(royalty);

@@ -77,6 +77,13 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     uint256 _startSaleBlockTimestamp,
     uint256 _stopSaleBlockTimestamp
   ) {
+    require(_startSaleBlockTimestamp >= block.timestamp, "Invalid start date");
+    require(
+      _stopSaleBlockTimestamp >= block.timestamp &&
+        _stopSaleBlockTimestamp > _startSaleBlockTimestamp,
+      "Invalid stop date"
+    );
+
     whitelistMerkleRoot = _whitelistMerkleRoot;
     advisorMerkleRoot = _advisorMerkleRoot;
 

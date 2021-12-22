@@ -16,18 +16,24 @@ import MerkleTree from "merkletreejs";
  * it's not going to be relative to the current timestamp when the
  * test is being executed. Otherwise tests would fail at some time.
  */
-describe("Sale", () => {
+describe("Sale", async () => {
   const merkleHelper = useMerkleHelper();
 
   // contracts
   let saleContract: Sale;
 
   // helper
+
   let deployContracts: DeployContractsFunction;
 
+  let startSaleBlockTimestamp: BigNumber = BigNumber.from(
+    (await ethers.provider.getBlock(await ethers.provider.getBlockNumber()))
+      .timestamp
+  );
+
+  let stopSaleBlockTimestamp = startSaleBlockTimestamp.add(86400000);
+
   // sale timestamps
-  let startSaleBlockTimestamp: BigNumber = toUnixTimestamp("2021-12-31");
-  let stopSaleBlockTimestamp: BigNumber = toUnixTimestamp("2022-01-31");
 
   // signers
   let owner: SignerWithAddress;
