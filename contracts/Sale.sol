@@ -55,6 +55,11 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   uint256 public stopSaleBlockTimestamp;
 
+  ///@notice to keep track if the advisor / user whitelisted has already claimed the nft;
+
+  mapping(address => bool) publicSaleClaimedStatus;
+  mapping(address => bool) advisoryClaimedStatus;
+
   /**
    * @notice The timestamp for when swapping keys for a scroll begins
    */
@@ -97,7 +102,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice Emits an event when a key has been swapped for a scroll
    */
-  event KeySwapped(address sender, uint256 tokenId);
+  event KeySwapped(address indexed sender, uint256 tokenId);
 
   /**
    * @notice Emits an event when a new Keys contract address has been set
@@ -107,7 +112,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice Emits an event when a new Scroll contract address has been set
    */
-  event NewScrollAddress(address scroll);
+  event NewScrollAddress(address indexed scroll);
 
   /**
    * @notice Emits an event when a timestamp for key swapping for scroll has been set
@@ -170,7 +175,11 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
    * @param _proof Merkle proof for the advisory list merkle root
    */
-  function preMint(bytes32[] calldata _proof) external nonReentrant {
+  function preMint(bytes32[] calldata _proof)
+    external
+    whenNotPaused
+    nonReentrant
+  {
     require(
       MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender)),
       "Not in the advisory list"
@@ -180,10 +189,15 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       "Advisory mint limit reached"
     );
 
+    require(advisoryKeyLimitCount < ADVISORY_KEY_LIMIT, "All minted");
+
+    require(!advisoryClaimedStatus[msg.sender], "Already claimed");
+
     // The `advisoryKeyLimitCount` state has to be mutated before
     // minting, otherwise vulnerable for reentrancy attack
     advisoryKeyLimitCount++;
 
+    advisoryClaimedStatus[msg.sender] = true;
     _keysContract.mintKeyToUser(msg.sender);
 
     emit KeyAdvisorMinted(msg.sender);
@@ -204,7 +218,10 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       MerkleProof.verify(_proof, whitelistMerkleRoot, _leaf(msg.sender)),
       "Not eligible"
     );
+    require(!publicSaleClaimedStatus[msg.sender], "Already claimed");
+    require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "All minted");
 
+    publicSaleClaimedStatus[msg.sender] = true;
     _keysContract.mintKeyToUser(msg.sender);
 
     emit KeyWhitelistMinted(msg.sender);
@@ -223,10 +240,11 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     hasSaleEnded
     whenNotPaused
   {
-    require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "Mint limit reached");
+    require(
+      publicKeyMintCount + advisoryKeyLimitCount < PUBLIC_KEY_LIMIT,
+      "Mint limit reached"
+    );
 
-    // The `publicKeyMintCount` state has to be mutated before
-    // minting, otherwise vulnerable for reentrancy attack
     publicKeyMintCount++;
 
     _keysContract.mintKeyToUser(msg.sender);
@@ -260,6 +278,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     whenNotPaused
   {
     // TODO: EIP 2809 implementation
+
     for (
       uint256 i = 0;
       i < 6969 - (publicKeyMintCount + advisoryKeyLimitCount);
