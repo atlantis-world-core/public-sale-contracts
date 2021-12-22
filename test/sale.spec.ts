@@ -1,29 +1,13 @@
 import { useMerkleHelper } from "../helpers/merkle";
-import { fromUnixTimestamp, toUnixTimestamp } from "../helpers/time";
+import { toUnixTimestamp } from "../helpers/time";
 import { expect } from "chai";
-import { ethers, upgrades } from "hardhat";
+import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import MerkleTree from "merkletreejs";
 import { Sale } from "../typechain";
-import {
-  deployMockContract,
-  MockContract,
-} from "@ethereum-waffle/mock-contract";
-import {
-  ADVISOR_WHITELISTED_USERS,
-  WHITELISTED_USERS,
-} from "../helpers/whitelist";
-
-import SaleABI from "../artifacts/contracts/Sale.sol/Sale.json";
 import { BigNumber } from "@ethersproject/bignumber";
-import { Contract } from "@ethersproject/contracts";
-
-export type SetupArgs = {
-  saleStart?: BigNumber;
-  saleStop?: BigNumber;
-};
-
-const useEthersJsSigners = true;
+import { testSetup } from "./utils";
+import { DeployContractsFunction, TestSetupArgs } from "./utils/types";
+import MerkleTree from "merkletreejs";
 
 /**
  * @todo
@@ -37,19 +21,15 @@ describe("Sale", () => {
 
   // contracts
   let saleContract: Sale;
-  let keysContract: Contract;
-  let scrollContract: Contract;
 
-  // mock contracts
-  let mockSaleContract: MockContract;
+  // helper
+  let deployContracts: DeployContractsFunction;
 
   // sale timestamps
   let startSaleBlockTimestamp: BigNumber = toUnixTimestamp("2021-12-31");
   let stopSaleBlockTimestamp: BigNumber = toUnixTimestamp("2022-01-31");
 
   // signers
-  let whitelistSigners: SignerWithAddress[];
-  let advisorSigners: SignerWithAddress[];
   let owner: SignerWithAddress;
   let minter: SignerWithAddress;
   let advisor: SignerWithAddress;
@@ -85,108 +65,39 @@ describe("Sale", () => {
   const validMintPayment = ethers.utils.parseEther("0.2");
   const invalidMintPayment = ethers.utils.parseEther("0.01");
 
-  const setup = async (args?: SetupArgs) => {
-    // signers
-    const signers = await ethers.getSigners();
-    whitelistSigners = signers.splice(0, 8);
-    advisorSigners = signers.splice(8, 8);
-    const [_owner, _minter] = whitelistSigners;
-    const [_advisor] = advisorSigners;
+  const setup = async (args?: TestSetupArgs) => {
+    const {
+      owner: _owner,
+      minter: _minter,
+      advisor: _advisor,
+      advisorLeaves: _advisorLeaves,
+      advisorMerkleRoot: _advisorMerkleRoot,
+      advisorMerkleTree: _advisorMerkleTree,
+      whitelistLeaves: _whitelistLeaves,
+      whitelistMerkleRoot: _whitelistMerkleRoot,
+      whitelistMerkleTree: _whitelistMerkleTree,
+      deployContracts: _deployContracts,
+    } = await testSetup();
 
     owner = _owner;
     minter = _minter;
     advisor = _advisor;
-
-    // leaves
-    whitelistLeaves = useEthersJsSigners
-      ? whitelistSigners.map((signer) => signer.address)
-      : WHITELISTED_USERS;
-    advisorLeaves = useEthersJsSigners
-      ? advisorSigners.map((signer) => signer.address)
-      : ADVISOR_WHITELISTED_USERS;
-
-    // merkle trees
-    whitelistMerkleTree = merkleHelper.createMerkleTree(whitelistLeaves);
-    advisorMerkleTree = merkleHelper.createMerkleTree(advisorLeaves);
-
-    // merkle roots
-    whitelistMerkleRoot = merkleHelper.createMerkleRoot(whitelistMerkleTree);
-    advisorMerkleRoot = merkleHelper.createMerkleRoot(advisorMerkleTree);
+    advisorLeaves = _advisorLeaves;
+    advisorMerkleRoot = _advisorMerkleRoot;
+    advisorMerkleTree = _advisorMerkleTree;
+    whitelistLeaves = _whitelistLeaves;
+    whitelistMerkleRoot = _whitelistMerkleRoot;
+    whitelistMerkleTree = _whitelistMerkleTree;
+    deployContracts = _deployContracts;
 
     // Sale contract deploy
-    saleContract = await deploySaleContract(
-      startSaleBlockTimestamp,
-      stopSaleBlockTimestamp
+    const { saleContract: _saleContract } = await deployContracts(
+      args?.saleStart ?? startSaleBlockTimestamp,
+      args?.saleStop ?? stopSaleBlockTimestamp
     );
 
     // connect as a minter
-    saleContract = saleContract.connect(minter);
-
-    // logs
-    // console.log("Sale contract address", saleContract.address);
-    // console.log("Keys contract address", keysContract.address);
-    // console.log("Scroll contract address", scrollContract.address);
-  };
-
-  // TODO: Should not deploy Keys and Scroll contract as a normal contract but rather should be a Proxy
-  const deploySaleContract = async (
-    startSaleBlockTimestamp: BigNumber,
-    stopSaleBlockTimestamp: BigNumber
-  ) => {
-    const SaleContract = await ethers.getContractFactory("Sale", {
-      signer: owner,
-    });
-    const saleContract = await SaleContract.deploy(
-      whitelistMerkleRoot,
-      advisorMerkleRoot,
-      startSaleBlockTimestamp,
-      stopSaleBlockTimestamp
-    );
-    mockSaleContract = await deployMockContract(owner, SaleABI.abi);
-    await saleContract.deployed();
-
-    // Keys contract deploy
-    // TODO: Should be deployed using proxy
-    const KeysContract = await ethers.getContractFactory("KeysContract");
-    keysContract = await KeysContract.deploy(saleContract.address);
-    await keysContract.deployed();
-    await saleContract.setKeysAddress(keysContract.address);
-
-    // ScrollContract deploy
-    // TODO: Should be deployed using proxy
-    const ScrollContract = await ethers.getContractFactory("ScrollContract");
-    scrollContract = await upgrades.deployProxy(
-      ScrollContract,
-      [saleContract.address],
-      { initializer: "initialize" }
-    );
-    await saleContract.setScollAddress(scrollContract.address);
-
-    return saleContract;
-  };
-
-  /**
-   * @description
-   * Just logs the timestamps from the smart contract.
-   */
-  const logTimestamps = async (saleContract: Sale, metadata?: any) => {
-    const [_startSaleBlockTimestamp, _stopSaleBlockTimestamp] =
-      await Promise.all([
-        saleContract.startSaleBlockTimestamp(),
-        saleContract.stopSaleBlockTimestamp(),
-      ]);
-    console.log(
-      "[logTimestamps] ⌚ logging timestamps",
-      {
-        _startSaleBlockTimestamp: fromUnixTimestamp(
-          _startSaleBlockTimestamp
-        ).toLocaleDateString(),
-        _stopSaleBlockTimestamp: fromUnixTimestamp(
-          _stopSaleBlockTimestamp
-        ).toLocaleDateString(),
-      },
-      metadata
-    );
+    saleContract = _saleContract.connect(minter);
   };
 
   beforeEach(async () => await setup());
@@ -216,9 +127,13 @@ describe("Sale", () => {
       ).to.be.revertedWith("Insufficient payment");
     });
 
-    it(`SHOULD revert with "You weren't whitelisted", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
+    it(`SHOULD revert with "Not eligible", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
       // arrange
-      saleContract = saleContract.connect(minter);
+      const { saleContract: _saleContract } = await deployContracts(
+        toUnixTimestamp("2021-12-01"),
+        toUnixTimestamp("2022-01-31")
+      );
+      saleContract = _saleContract.connect(minter);
       const badMerkleProof: string[] = [];
       const overrides = {
         from: minter.address,
@@ -228,16 +143,16 @@ describe("Sale", () => {
       // act & assert
       await expect(
         saleContract.buyKeyFromSale(badMerkleProof, overrides)
-      ).to.be.revertedWith("You weren't whitelisted");
+      ).to.be.revertedWith("Not eligible");
     });
 
     it(`SHOULD revert with "Sale is over", WHEN GIVEN a valid merkle proof AND the sale time range is from the past`, async () => {
       // arrange
-      let saleContract = await deploySaleContract(
+      const { saleContract: _saleContract } = await deployContracts(
         toUnixTimestamp("2019-12-01"),
         toUnixTimestamp("2020-01-31")
       );
-      saleContract = saleContract.connect(minter);
+      saleContract = _saleContract.connect(minter);
       const proof = validWhitelistProof();
       const overrides = {
         from: minter.address,
@@ -263,18 +178,18 @@ describe("Sale", () => {
           from: minter.address,
           value: validMintPayment,
         })
-      ).to.emit(saleContract, "KeyPurchasedOnSale").and.to.be.not.reverted;
+      ).to.emit(saleContract, "KeyWhitelistMinted").and.to.be.not.reverted;
     });
   });
 
   describe("buyKeyPostSale", () => {
     it(`SHOULD revert with "Insufficient payment", WHEN the sale timeframe is still over AND mint payment is NOT 0.2 ether`, async () => {
       // arrange
-      let saleContract = await deploySaleContract(
+      const { saleContract: _saleContract } = await deployContracts(
         toUnixTimestamp("2020-12-01"),
         toUnixTimestamp("2021-01-31")
       );
-      saleContract = saleContract.connect(minter);
+      saleContract = _saleContract.connect(minter);
       const overrides = {
         from: minter.address,
         value: invalidMintPayment,
@@ -304,11 +219,11 @@ describe("Sale", () => {
 
     it(`SHOULD NOT revert with "Sale is ongoing", WHEN the sale timeframe is over`, async () => {
       // arrange
-      let saleContract = await deploySaleContract(
+      const { saleContract: _saleContract } = await deployContracts(
         toUnixTimestamp("2020-12-01"),
         toUnixTimestamp("2021-01-31")
       );
-      saleContract = saleContract.connect(minter);
+      saleContract = _saleContract.connect(minter);
       const overrides = {
         from: minter.address,
         value: validMintPayment,
@@ -325,11 +240,11 @@ describe("Sale", () => {
   describe("sellKeyForScroll", () => {
     it(`SHOULD revert with "A date for swapping hasn't been set", WHEN the startKeyToScrollSwapTimestamp is not set`, async () => {
       // arrange
-      let saleContract = await deploySaleContract(
+      const { saleContract: _saleContract } = await deployContracts(
         toUnixTimestamp("2020-12-01"),
         toUnixTimestamp("2021-01-31")
       );
-      saleContract = saleContract.connect(owner);
+      saleContract = _saleContract.connect(owner);
       const overrides = {
         from: owner.address,
       };
@@ -350,11 +265,11 @@ describe("Sale", () => {
 
     it(`SHOULD revert with "Please wait for the swapping to begin", WHEN the startKeyToScrollSwapTimestamp is not set`, async () => {
       // arrange
-      let saleContract = await deploySaleContract(
+      const { saleContract: _saleContract } = await deployContracts(
         toUnixTimestamp("2020-12-01"),
         toUnixTimestamp("2021-01-31")
       );
-      saleContract = saleContract.connect(owner);
+      saleContract = _saleContract.connect(owner);
       const keySwappingTimestamp = toUnixTimestamp("2023-12-05");
       const overrides = {
         from: owner.address,
@@ -380,11 +295,11 @@ describe("Sale", () => {
 
     it(`SHOULD revert with "ERC721: owner query for nonexistent token", WHEN the sale timeframe is over AND attempts to burn a key that caller doesn't own`, async () => {
       // arrange
-      let saleContract = await deploySaleContract(
+      const { saleContract: _saleContract } = await deployContracts(
         toUnixTimestamp("2020-12-01"),
         toUnixTimestamp("2021-01-31")
       );
-      saleContract = saleContract.connect(owner);
+      saleContract = _saleContract.connect(owner);
       const keySwappingTimestamp = toUnixTimestamp("2020-12-05");
       const overrides = {
         from: owner.address,
@@ -410,11 +325,11 @@ describe("Sale", () => {
 
     it(`SHOULD NOT revert with "Please wait for the swapping to begin", WHEN the sale timeframe is over`, async () => {
       // arrange
-      let saleContract = await deploySaleContract(
+      const { saleContract: _saleContract } = await deployContracts(
         toUnixTimestamp("2020-12-01"),
         toUnixTimestamp("2021-01-31")
       );
-      saleContract = saleContract.connect(owner);
+      saleContract = _saleContract.connect(owner);
       const keySwappingTimestamp = toUnixTimestamp("2020-12-05");
       const overrides = {
         from: owner.address,
@@ -470,12 +385,12 @@ describe("Sale", () => {
     });
 
     it(`SHOULD emit event KeyAdvisorMinted AND NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
-      // // arrange
-      let saleContract = await deploySaleContract(
+      // arrange
+      const { saleContract: _saleContract } = await deployContracts(
         toUnixTimestamp("2020-12-01"),
         toUnixTimestamp("2021-01-31")
       );
-      saleContract = saleContract.connect(advisor);
+      saleContract = _saleContract.connect(advisor);
 
       // assert
       await expect(
@@ -588,8 +503,8 @@ describe("Sale", () => {
       saleContract = saleContract.connect(owner);
 
       // act & assert
-      await expect(saleContract.setScollAddress(saleContract.address)).to.be.not
-        .reverted;
+      await expect(saleContract.setScrollAddress(saleContract.address)).to.be
+        .not.reverted;
     });
 
     it(`SHOULD revert with "Ownable: caller is not the owner", WHEN it's NOT the owner that makes the call`, async () => {
@@ -598,7 +513,7 @@ describe("Sale", () => {
 
       // act & assert
       await expect(
-        saleContract.setScollAddress(saleContract.address)
+        saleContract.setScrollAddress(saleContract.address)
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
@@ -608,7 +523,7 @@ describe("Sale", () => {
 
       // act & assert
       await expect(
-        saleContract.setScollAddress(ethers.constants.AddressZero)
+        saleContract.setScrollAddress(ethers.constants.AddressZero)
       ).to.be.revertedWith("Must not be an empty address");
     });
   });

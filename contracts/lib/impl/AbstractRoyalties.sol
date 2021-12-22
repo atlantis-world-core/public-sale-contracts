@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
+
 import "../LibPart.sol";
 
 abstract contract AbstractRoyalties {
@@ -14,6 +15,7 @@ abstract contract AbstractRoyalties {
         "Recipient should be present"
       );
       require(_royalties[i].value != 0, "Royalty value should be positive");
+      
       royalties[_id].push(_royalties[i]);
     }
     _onRoyaltiesSet(_id, _royalties);
