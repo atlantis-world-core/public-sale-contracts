@@ -237,7 +237,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * whitelist. Will only work for a max of 6969 keys.
    */
   function buyKeyPostSale()
-    public
+    external
     payable
     nonReentrant
     canAffordMintPrice
