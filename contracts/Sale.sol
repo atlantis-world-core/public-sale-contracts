@@ -55,10 +55,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   uint256 public stopSaleBlockTimestamp;
 
-  ///@notice to keep track if the advisor / user whitelisted has already claimed the nft;
-
-  mapping(address => bool) publicSaleClaimedStatus;
-  mapping(address => bool) advisoryClaimedStatus;
+  /// @notice to keep track if the advisor / user whitelisted has already claimed the NFT
+  mapping(address => bool) private _publicSaleClaimedStatus;
+  mapping(address => bool) private _advisoryClaimedStatus;
 
   /**
    * @notice The timestamp for when swapping keys for a scroll begins
@@ -191,20 +190,15 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender)),
       "Not in the advisory list"
     );
+    require(!_advisoryClaimedStatus[msg.sender], "Already claimed");
     require(
       advisoryKeyLimitCount < ADVISORY_KEY_LIMIT,
       "Advisory mint limit reached"
     );
 
-    require(advisoryKeyLimitCount < ADVISORY_KEY_LIMIT, "All minted");
-
-    require(!advisoryClaimedStatus[msg.sender], "Already claimed");
-
-    // The `advisoryKeyLimitCount` state has to be mutated before
-    // minting, otherwise vulnerable for reentrancy attack
     advisoryKeyLimitCount++;
-
-    advisoryClaimedStatus[msg.sender] = true;
+    _advisoryClaimedStatus[msg.sender] = true;
+    
     _keysContract.mintKeyToUser(msg.sender);
 
     emit KeyAdvisorMinted(msg.sender);
@@ -225,10 +219,12 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       MerkleProof.verify(_proof, whitelistMerkleRoot, _leaf(msg.sender)),
       "Not eligible"
     );
-    require(!publicSaleClaimedStatus[msg.sender], "Already claimed");
+    require(!_publicSaleClaimedStatus[msg.sender], "Already claimed");
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "All minted");
 
-    publicSaleClaimedStatus[msg.sender] = true;
+    publicKeyMintCount++;
+    _publicSaleClaimedStatus[msg.sender] = true;
+
     _keysContract.mintKeyToUser(msg.sender);
 
     emit KeyWhitelistMinted(msg.sender);
