@@ -93,27 +93,27 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice Emits an event when an advisor have minted
    */
-  event KeyAdvisorMinted(address sender);
+  event KeyAdvisorMinted(address indexed sender);
 
   /**
    * @notice Emits an event when a whitelisted user have minted
    */
-  event KeyWhitelistMinted(address sender);
+  event KeyWhitelistMinted(address indexed sender);
 
   /**
    * @notice Emits an event when someone have minted after the sale
    */
-  event KeyPublicMinted(address sender);
+  event KeyPublicMinted(address indexed sender);
 
   /**
    * @notice Emits an event when a key has been swapped for a scroll
    */
-  event KeySwapped(address indexed sender, uint256 tokenId);
+  event KeySwapped(address indexed sender, uint256 indexed tokenId);
 
   /**
    * @notice Emits an event when a new Keys contract address has been set
    */
-  event NewKeysAddress(address keys);
+  event NewKeysAddress(address indexed keys);
 
   /**
    * @notice Emits an event when a new Scroll contract address has been set
@@ -123,7 +123,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice Emits an event when a timestamp for key swapping for scroll has been set
    */
-  event NewStartKeyToScrollSwapTimestamp(uint256 timestamp);
+  event NewStartKeyToScrollSwapTimestamp(uint256 indexed timestamp);
 
   /**
    * @notice Validates if the given address is not an empty address
@@ -198,7 +198,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
     advisoryKeyLimitCount++;
     _advisoryClaimedStatus[msg.sender] = true;
-    
+
     _keysContract.mintKeyToUser(msg.sender);
 
     emit KeyAdvisorMinted(msg.sender);
