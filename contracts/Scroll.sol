@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier:  GNU General Public License v3.0
 pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
@@ -45,7 +45,7 @@ contract ScrollContract is
   }
 
   /**
-   * @notice Function to mint the scroll to user. Called by the sale contract 
+   * @notice Function to mint the scroll to user. Called by the sale contract
    * after burning the key.
    */
   function mint(address _user, uint256 _tokenId)
