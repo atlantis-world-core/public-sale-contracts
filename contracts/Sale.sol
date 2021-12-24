@@ -30,10 +30,11 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   uint256 public mintPrice = 0.2 ether;
 
   /**
-   * @notice 6666 + 303 = 6969 Total Supply
+   * @notice `PUBLIC_KEY_LIMIT` + `ADVISORY_KEY_LIMIT` = `TOTAL_SUPPLY` Total Supply
    */
   uint256 public constant PUBLIC_KEY_LIMIT = 6666;
   uint256 public constant ADVISORY_KEY_LIMIT = 303;
+  uint256 public constant TOTAL_SUPPLY = PUBLIC_KEY_LIMIT + ADVISORY_KEY_LIMIT;
 
   /**
    * @notice The current mint count from public users
@@ -281,15 +282,14 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     whenNotPaused
   {
     // TODO: EIP 2809 implementation
-
     for (
       uint256 i = 0;
-      i < 6969 - (publicKeyMintCount + advisoryKeyLimitCount);
+      i < TOTAL_SUPPLY - (publicKeyMintCount + advisoryKeyLimitCount);
       i++
     ) _keysContract.mintKeyToUser(_treasuryAddress);
 
-    publicKeyMintCount = 6666;
-    advisoryKeyLimitCount = 303;
+    publicKeyMintCount = PUBLIC_KEY_LIMIT;
+    advisoryKeyLimitCount = ADVISORY_KEY_LIMIT;
   }
 
   // *************
