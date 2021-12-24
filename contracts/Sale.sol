@@ -27,13 +27,14 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice The mint price for a key
    */
-  uint256 public mintPrice = 0.2 ether;
+  uint256 public constant MINT_PRICE = 0.2 ether;
 
   /**
-   * @notice 6666 + 303 = 6969 Total Supply
+   * @notice `PUBLIC_KEY_LIMIT` + `ADVISORY_KEY_LIMIT` = `TOTAL_SUPPLY` Total Supply
    */
   uint256 public constant PUBLIC_KEY_LIMIT = 6666;
   uint256 public constant ADVISORY_KEY_LIMIT = 303;
+  uint256 public constant TOTAL_SUPPLY = PUBLIC_KEY_LIMIT + ADVISORY_KEY_LIMIT;
 
   /**
    * @notice The current mint count from public users
@@ -55,10 +56,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   uint256 public stopSaleBlockTimestamp;
 
-  ///@notice to keep track if the advisor / user whitelisted has already claimed the nft;
-
-  mapping(address => bool) publicSaleClaimedStatus;
-  mapping(address => bool) advisoryClaimedStatus;
+  /// @notice to keep track if the advisor / user whitelisted has already claimed the NFT
+  mapping(address => bool) private _publicSaleClaimedStatus;
+  mapping(address => bool) private _advisoryClaimedStatus;
 
   /**
    * @notice The timestamp for when swapping keys for a scroll begins
@@ -94,27 +94,27 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice Emits an event when an advisor have minted
    */
-  event KeyAdvisorMinted(address sender);
+  event KeyAdvisorMinted(address indexed sender);
 
   /**
    * @notice Emits an event when a whitelisted user have minted
    */
-  event KeyWhitelistMinted(address sender);
+  event KeyWhitelistMinted(address indexed sender);
 
   /**
    * @notice Emits an event when someone have minted after the sale
    */
-  event KeyPublicMinted(address sender);
+  event KeyPublicMinted(address indexed sender);
 
   /**
    * @notice Emits an event when a key has been swapped for a scroll
    */
-  event KeySwapped(address indexed sender, uint256 tokenId);
+  event KeySwapped(address indexed sender, uint256 indexed tokenId);
 
   /**
    * @notice Emits an event when a new Keys contract address has been set
    */
-  event NewKeysAddress(address keys);
+  event NewKeysAddress(address indexed keys);
 
   /**
    * @notice Emits an event when a new Scroll contract address has been set
@@ -124,7 +124,13 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice Emits an event when a timestamp for key swapping for scroll has been set
    */
-  event NewStartKeyToScrollSwapTimestamp(uint256 timestamp);
+  event NewStartKeyToScrollSwapTimestamp(uint256 indexed timestamp);
+
+  /// @notice When a new whitelist merkle root is set
+  event NewWhitelistMerkleRootSet(uint256 indexed timestamp);
+
+  /// @notice When a new advisory merkle root is set
+  event NewAdvisoryMerkleRootSet(uint256 indexed timestamp);
 
   /**
    * @notice Validates if the given address is not an empty address
@@ -138,7 +144,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * @notice Validates if the sender has enough ether to mint a key
    */
   modifier canAffordMintPrice() {
-    require(msg.value >= mintPrice, "Insufficient payment");
+    require(msg.value >= MINT_PRICE, "Insufficient payment");
     _;
   }
 
@@ -191,20 +197,15 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender)),
       "Not in the advisory list"
     );
+    require(!_advisoryClaimedStatus[msg.sender], "Already claimed");
     require(
       advisoryKeyLimitCount < ADVISORY_KEY_LIMIT,
       "Advisory mint limit reached"
     );
 
-    require(advisoryKeyLimitCount < ADVISORY_KEY_LIMIT, "All minted");
-
-    require(!advisoryClaimedStatus[msg.sender], "Already claimed");
-
-    // The `advisoryKeyLimitCount` state has to be mutated before
-    // minting, otherwise vulnerable for reentrancy attack
     advisoryKeyLimitCount++;
+    _advisoryClaimedStatus[msg.sender] = true;
 
-    advisoryClaimedStatus[msg.sender] = true;
     _keysContract.mintKeyToUser(msg.sender);
 
     emit KeyAdvisorMinted(msg.sender);
@@ -225,10 +226,12 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       MerkleProof.verify(_proof, whitelistMerkleRoot, _leaf(msg.sender)),
       "Not eligible"
     );
-    require(!publicSaleClaimedStatus[msg.sender], "Already claimed");
+    require(!_publicSaleClaimedStatus[msg.sender], "Already claimed");
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "All minted");
 
-    publicSaleClaimedStatus[msg.sender] = true;
+    publicKeyMintCount++;
+    _publicSaleClaimedStatus[msg.sender] = true;
+
     _keysContract.mintKeyToUser(msg.sender);
 
     emit KeyWhitelistMinted(msg.sender);
@@ -240,7 +243,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * whitelist. Will only work for a max of 6969 keys.
    */
   function buyKeyPostSale()
-    public
+    external
     payable
     nonReentrant
     canAffordMintPrice
@@ -285,15 +288,14 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     whenNotPaused
   {
     // TODO: EIP 2809 implementation
-
     for (
       uint256 i = 0;
-      i < 6969 - (publicKeyMintCount + advisoryKeyLimitCount);
+      i < TOTAL_SUPPLY - (publicKeyMintCount + advisoryKeyLimitCount);
       i++
     ) _keysContract.mintKeyToUser(_treasuryAddress);
 
-    publicKeyMintCount = 6666;
-    advisoryKeyLimitCount = 303;
+    publicKeyMintCount = PUBLIC_KEY_LIMIT;
+    advisoryKeyLimitCount = ADVISORY_KEY_LIMIT;
   }
 
   // *************
@@ -308,6 +310,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     external
     onlyOwner
   {
+    require(_timestamp >= block.timestamp, "Invalid timestamp");
+
     startKeyToScrollSwapTimestamp = _timestamp;
 
     emit NewStartKeyToScrollSwapTimestamp(_timestamp);
@@ -318,6 +322,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   function setWhitelistMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
     whitelistMerkleRoot = _merkleRoot;
+
+    emit NewWhitelistMerkleRootSet(block.timestamp);
   }
 
   /**
@@ -325,6 +331,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   function setAdvisorMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
     advisorMerkleRoot = _merkleRoot;
+
+    emit NewAdvisoryMerkleRootSet(block.timestamp);
   }
 
   /**
