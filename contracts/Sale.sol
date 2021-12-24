@@ -27,7 +27,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice The mint price for a key
    */
-  uint256 public mintPrice = 0.2 ether;
+  uint256 public constant MINT_PRICE = 0.2 ether;
 
   /**
    * @notice `PUBLIC_KEY_LIMIT` + `ADVISORY_KEY_LIMIT` = `TOTAL_SUPPLY` Total Supply
@@ -138,7 +138,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * @notice Validates if the sender has enough ether to mint a key
    */
   modifier canAffordMintPrice() {
-    require(msg.value >= mintPrice, "Insufficient payment");
+    require(msg.value >= MINT_PRICE, "Insufficient payment");
     _;
   }
 
