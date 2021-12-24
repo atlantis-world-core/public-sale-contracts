@@ -126,6 +126,12 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   event NewStartKeyToScrollSwapTimestamp(uint256 indexed timestamp);
 
+  /// @notice When a new whitelist merkle root is set
+  event NewWhitelistMerkleRootSet(uint256 indexed timestamp);
+
+  /// @notice When a new advisory merkle root is set
+  event NewAdvisoryMerkleRootSet(uint256 indexed timestamp);
+
   /**
    * @notice Validates if the given address is not an empty address
    */
@@ -316,6 +322,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   function setWhitelistMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
     whitelistMerkleRoot = _merkleRoot;
+
+    emit NewWhitelistMerkleRootSet(block.timestamp);
   }
 
   /**
@@ -323,6 +331,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   function setAdvisorMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
     advisorMerkleRoot = _merkleRoot;
+
+    emit NewAdvisoryMerkleRootSet(block.timestamp);
   }
 
   /**
