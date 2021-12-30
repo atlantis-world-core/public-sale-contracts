@@ -111,7 +111,7 @@ describe("Sale", async () => {
   describe("mintPrice", () => {
     // a very basic test, just so we can easily confirm the test setup is working as expected
     it("SHOULD return 0.2 ether, WHEN called", async () => {
-      const mintPrice = await saleContract.mintPrice();
+      const mintPrice = await saleContract.MINT_PRICE();
 
       // assert
       expect(ethers.utils.formatEther(mintPrice)).to.be.equal("0.2");
