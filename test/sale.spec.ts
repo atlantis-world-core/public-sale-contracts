@@ -9,13 +9,6 @@ import { testSetup } from "./utils";
 import { DeployContractsFunction, TestSetupArgs } from "./utils/types";
 import MerkleTree from "merkletreejs";
 
-/**
- * @todo
- * The timestamps should not be relative, should be replaced with a
- * library where you can add days, weeks, months, and years. Where
- * it's not going to be relative to the current timestamp when the
- * test is being executed. Otherwise tests would fail at some time.
- */
 describe("Sale", async () => {
   const merkleHelper = useMerkleHelper();
 
