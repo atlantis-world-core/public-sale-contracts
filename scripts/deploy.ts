@@ -43,7 +43,8 @@ async function main() {
     whitelistMerkleRoot,
     advisorMerkleRoot,
     toUnixTimestamp(process.env.START_SALE_BLOCK_TIMESTAMP), // returns a BigNumber -> block.timestamp value
-    toUnixTimestamp(process.env.STOP_SALE_BLOCK_TIMESTAMP) // returns a BigNumber -> block.timestamp value
+    toUnixTimestamp(process.env.STOP_SALE_BLOCK_TIMESTAMP), // returns a BigNumber -> block.timestamp value
+    process.env.OWNER
   );
   console.info(
     `\n[SaleContract] txHash: "${saleContract.deployTransaction.hash}"`

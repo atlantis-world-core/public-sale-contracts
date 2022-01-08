@@ -37,6 +37,7 @@ const config: HardhatUserConfig = {
     localhost: {
       gas: 2100000,
       gasPrice: 8000000000,
+      url: "HTTP://127.0.0.1:9545",
     },
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
@@ -45,6 +46,9 @@ const config: HardhatUserConfig = {
     },
     mumbai: {
       url: process.env.MATIC_MUMBAI_URL || "",
+      chainId: 80001,
+      gas: 2100000,
+      gasPrice: 8000000000,
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
