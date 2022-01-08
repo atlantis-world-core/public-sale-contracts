@@ -32,8 +32,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice The mint price for a key
    */
-  uint256 public constant MINT_PRICE = 0.2;
-  uint256 decimals = 1e18;
+  uint256 public constant MINT_PRICE = (2 * 1e18) / 10;
+
+  /// @notice WETH Contract
   IERC20 WETH;
 
   /**
@@ -63,6 +64,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * @notice The timestamp for when the alpha sale stops
    */
   uint256 public stopSaleBlockTimestamp;
+
+  /// @notice For assigning an address the right to withdraw funds
+  uint256 private targetAddress;
 
   /// @notice to keep track if the advisor / user whitelisted has already claimed the NFT
   mapping(address => bool) private _publicSaleClaimedStatus;
@@ -240,7 +244,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     require(!_publicSaleClaimedStatus[msg.sender], "Already claimed");
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "All minted");
     require(
-      WETH.transferFrom(msg.sender, address(this), MINT_PRICE * decimals),
+      WETH.transferFrom(msg.sender, address(this), MINT_PRICE),
       "Not allowed or low funds"
     );
 
@@ -276,7 +280,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     );
 
     require(
-      WETH.transferFrom(msg.sender, address(this), MINT_PRICE * decimals),
+      WETH.transferFrom(msg.sender, address(this), MINT_PRICE),
       "Not allowed or low funds"
     );
 
@@ -406,11 +410,17 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     return keccak256(abi.encodePacked(_sender));
   }
 
-  function withdraw(address _targetAddress) external onlyOwner {
+  function approveWithdrawelAddress(address _targetAddress) external onlyOwner {
+    targetAddress = _targetAddress;
+  }
+
+  function withdraw() external onlyOwner {
+    require(msg.sender == targetAddress, "Not the assigned address");
+
     WETH.transferFrom(
       address(this),
-      _targetAddress,
-      publicKeyMintCount * MINT_PRICE * decimals
+      targetAddress,
+      publicKeyMintCount * MINT_PRICE
     );
   }
 }
