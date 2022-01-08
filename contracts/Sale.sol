@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IKeys} from "./interface/IKeys.sol";
 import {IScroll} from "./interface/IScroll.sol";
-import "hardhat/console.sol";
 
 /// @title A controller for the entire club sale
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
@@ -36,7 +35,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice 9696 + 303 = 9999 Total Supply
    */
-  uint256 public constant PUBLIC_KEY_LIMIT = 9999;
+  uint256 public constant PUBLIC_KEY_LIMIT = 9696;
   uint256 public constant ADVISORY_KEY_LIMIT = 303;
 
   /**
@@ -82,11 +81,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     uint256 _stopSaleBlockTimestamp,
     address _publicVerification
   ) {
-    console.log(
-      _startSaleBlockTimestamp,
-      _stopSaleBlockTimestamp,
-      block.timestamp
-    );
     require(_startSaleBlockTimestamp >= block.timestamp, "Invalid start date");
     require(
       _stopSaleBlockTimestamp >= block.timestamp &&
@@ -262,6 +256,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       publicKeyMintCount + advisoryKeyLimitCount < PUBLIC_KEY_LIMIT,
       "Mint limit reached"
     );
+
+    hash = ECDSA.toEthSignedMessageHash(hash);
     console.log(ECDSA.recover(hash, signature), publicVerificationAddress);
     require(
       ECDSA.recover(hash, signature) == (publicVerificationAddress),

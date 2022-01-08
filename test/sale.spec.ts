@@ -355,6 +355,7 @@ describe("Sale", async () => {
   });
 
   describe("preMint", () => {
+    before(async () => await setup());
     it(`SHOULD revert with "Not in the advisory list", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
       // arrange
       saleContract = saleContract.connect(advisor);
