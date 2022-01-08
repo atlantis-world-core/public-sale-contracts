@@ -50,11 +50,13 @@ export const testSetup = async () => {
     const SaleContract = await ethers.getContractFactory("Sale", {
       signer: owner,
     });
+
     const saleContract = await SaleContract.deploy(
       whitelistMerkleRoot,
       advisorMerkleRoot,
       startSaleBlockTimestamp ?? BigNumber.from(0),
-      stopSaleBlockTimestamp ?? BigNumber.from(0)
+      stopSaleBlockTimestamp ?? BigNumber.from(0),
+      owner.address
     );
     const mockSaleContract = await deployMockContract(owner, SaleABI.abi);
     await saleContract.deployed();

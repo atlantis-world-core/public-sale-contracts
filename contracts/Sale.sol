@@ -4,6 +4,7 @@ pragma solidity ^0.8.10;
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IKeys} from "./interface/IKeys.sol";
 import {IScroll} from "./interface/IScroll.sol";
@@ -24,15 +25,18 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   bytes32 private whitelistMerkleRoot;
   bytes32 private advisorMerkleRoot;
 
+  address private publicVerificationAddress;
+
   /**
    * @notice The mint price for a key
    */
   uint256 public constant MINT_PRICE = 0.2 ether;
 
   /**
+   * @notice 9696 + 303 = 9999 Total Supply
    * @notice `PUBLIC_KEY_LIMIT` + `ADVISORY_KEY_LIMIT` = `TOTAL_SUPPLY` Total Supply
    */
-  uint256 public constant PUBLIC_KEY_LIMIT = 6666;
+  uint256 public constant PUBLIC_KEY_LIMIT = 9696;
   uint256 public constant ADVISORY_KEY_LIMIT = 303;
   uint256 public constant TOTAL_SUPPLY = PUBLIC_KEY_LIMIT + ADVISORY_KEY_LIMIT;
 
@@ -75,7 +79,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     bytes32 _whitelistMerkleRoot,
     bytes32 _advisorMerkleRoot,
     uint256 _startSaleBlockTimestamp,
-    uint256 _stopSaleBlockTimestamp
+    uint256 _stopSaleBlockTimestamp,
+    address _publicVerification
   ) {
     require(_startSaleBlockTimestamp >= block.timestamp, "Invalid start date");
     require(
@@ -84,6 +89,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       "Invalid stop date"
     );
 
+    publicVerificationAddress = _publicVerification;
     whitelistMerkleRoot = _whitelistMerkleRoot;
     advisorMerkleRoot = _advisorMerkleRoot;
 
@@ -242,7 +248,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * For general public to mint tokens, who weren't listed in the
    * whitelist. Will only work for a max of 6969 keys.
    */
-  function buyKeyPostSale()
+  function buyKeyPostSale(bytes32 hash, bytes calldata signature)
     external
     payable
     nonReentrant
@@ -253,6 +259,12 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     require(
       publicKeyMintCount + advisoryKeyLimitCount < PUBLIC_KEY_LIMIT,
       "Mint limit reached"
+    );
+
+    hash = ECDSA.toEthSignedMessageHash(hash);
+    require(
+      ECDSA.recover(hash, signature) == (publicVerificationAddress),
+      "Signature Verification Failed"
     );
 
     publicKeyMintCount++;
