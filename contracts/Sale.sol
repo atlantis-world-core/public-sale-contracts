@@ -66,7 +66,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   uint256 public stopSaleBlockTimestamp;
 
   /// @notice For assigning an address the right to withdraw funds
-  uint256 private targetAddress;
+  address private targetAddress;
 
   /// @notice to keep track if the advisor / user whitelisted has already claimed the NFT
   mapping(address => bool) private _publicSaleClaimedStatus;
@@ -157,14 +157,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   }
 
   /**
-   * @notice Validates if the sender has enough ether to mint a key
-   */
-  modifier canAffordMintPrice() {
-    require(msg.value >= MINT_PRICE, "Insufficient payment");
-    _;
-  }
-
-  /**
    * @notice Validates if the current block timestamp is still under the sale timestamp range
    */
   modifier isSaleOnGoing() {
@@ -234,7 +226,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   function buyKeyFromSale(bytes32[] calldata _proof)
     external
     nonReentrant
-    canAffordMintPrice
     isSaleOnGoing
   {
     require(
@@ -264,7 +255,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   function buyKeyPostSale(bytes32 hash, bytes calldata signature)
     external
     nonReentrant
-    canAffordMintPrice
     hasSaleEnded
     whenNotPaused
   {
