@@ -4,9 +4,11 @@ pragma solidity ^0.8.10;
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IKeys} from "./interface/IKeys.sol";
 import {IScroll} from "./interface/IScroll.sol";
+import "hardhat/console.sol";
 
 /// @title A controller for the entire club sale
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
@@ -24,15 +26,17 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   bytes32 private whitelistMerkleRoot;
   bytes32 private advisorMerkleRoot;
 
+  address private publicVerificationAddress;
+
   /**
    * @notice The mint price for a key
    */
   uint256 public mintPrice = 0.2 ether;
 
   /**
-   * @notice 6666 + 303 = 6969 Total Supply
+   * @notice 9696 + 303 = 9999 Total Supply
    */
-  uint256 public constant PUBLIC_KEY_LIMIT = 6666;
+  uint256 public constant PUBLIC_KEY_LIMIT = 9999;
   uint256 public constant ADVISORY_KEY_LIMIT = 303;
 
   /**
@@ -75,8 +79,14 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     bytes32 _whitelistMerkleRoot,
     bytes32 _advisorMerkleRoot,
     uint256 _startSaleBlockTimestamp,
-    uint256 _stopSaleBlockTimestamp
+    uint256 _stopSaleBlockTimestamp,
+    address _publicVerification
   ) {
+    console.log(
+      _startSaleBlockTimestamp,
+      _stopSaleBlockTimestamp,
+      block.timestamp
+    );
     require(_startSaleBlockTimestamp >= block.timestamp, "Invalid start date");
     require(
       _stopSaleBlockTimestamp >= block.timestamp &&
@@ -84,6 +94,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       "Invalid stop date"
     );
 
+    publicVerificationAddress = _publicVerification;
     whitelistMerkleRoot = _whitelistMerkleRoot;
     advisorMerkleRoot = _advisorMerkleRoot;
 
@@ -239,8 +250,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * For general public to mint tokens, who weren't listed in the
    * whitelist. Will only work for a max of 6969 keys.
    */
-  function buyKeyPostSale()
-    public
+  function buyKeyPostSale(bytes32 hash, bytes calldata signature)
+    external
     payable
     nonReentrant
     canAffordMintPrice
@@ -250,6 +261,11 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     require(
       publicKeyMintCount + advisoryKeyLimitCount < PUBLIC_KEY_LIMIT,
       "Mint limit reached"
+    );
+    console.log(ECDSA.recover(hash, signature), publicVerificationAddress);
+    require(
+      ECDSA.recover(hash, signature) == (publicVerificationAddress),
+      "Signature Verification Failed"
     );
 
     publicKeyMintCount++;

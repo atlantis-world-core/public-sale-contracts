@@ -31,8 +31,6 @@ describe("Sale", async () => {
       .timestamp
   );
 
-  let stopSaleBlockTimestamp = startSaleBlockTimestamp.add(86400000);
-
   // sale timestamps
 
   // signers
@@ -96,19 +94,25 @@ describe("Sale", async () => {
     whitelistMerkleTree = _whitelistMerkleTree;
     deployContracts = _deployContracts;
 
+    const currentTimestamp = (
+      await ethers
+        .getDefaultProvider()
+        .getBlock(await ethers.getDefaultProvider().getBlockNumber())
+    ).timestamp;
+
     // Sale contract deploy
-    const { saleContract: _saleContract } = await deployContracts(
-      args?.saleStart ?? startSaleBlockTimestamp,
-      args?.saleStop ?? stopSaleBlockTimestamp
-    );
+    const { saleContract: _saleContract, scrollContract: _scrollContract } =
+      await deployContracts(
+        BigNumber.from(parseInt((currentTimestamp + 1000).toString())),
+        BigNumber.from(parseInt((currentTimestamp + 1000 + 5184000).toString()))
+      );
 
     // connect as a minter
     saleContract = _saleContract.connect(minter);
   };
 
-  beforeEach(async () => await setup());
-
   describe("mintPrice", () => {
+    beforeEach(async () => await setup());
     // a very basic test, just so we can easily confirm the test setup is working as expected
     it("SHOULD return 0.2 ether, WHEN called", async () => {
       const mintPrice = await saleContract.mintPrice();
@@ -119,6 +123,7 @@ describe("Sale", async () => {
   });
 
   describe("buyKeyFromSale", () => {
+    before(async () => await setup());
     it(`SHOULD revert with "Insufficient payment", WHEN GIVEN an invalid mint price AND the sale is still on-going`, async () => {
       // arrange
       saleContract = saleContract.connect(minter);
@@ -134,12 +139,9 @@ describe("Sale", async () => {
     });
 
     it(`SHOULD revert with "Not eligible", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
-      // arrange
-      const { saleContract: _saleContract } = await deployContracts(
-        toUnixTimestamp("2021-12-01"),
-        toUnixTimestamp("2022-01-31")
-      );
-      saleContract = _saleContract.connect(minter);
+      await ethers.provider.send("evm_increaseTime", [1000]);
+      await ethers.provider.send("evm_mine", []);
+
       const badMerkleProof: string[] = [];
       const overrides = {
         from: minter.address,
@@ -152,32 +154,7 @@ describe("Sale", async () => {
       ).to.be.revertedWith("Not eligible");
     });
 
-    it(`SHOULD revert with "Sale is over", WHEN GIVEN a valid merkle proof AND the sale time range is from the past`, async () => {
-      // arrange
-      const { saleContract: _saleContract } = await deployContracts(
-        toUnixTimestamp("2019-12-01"),
-        toUnixTimestamp("2020-01-31")
-      );
-      saleContract = _saleContract.connect(minter);
-      const proof = validWhitelistProof();
-      const overrides = {
-        from: minter.address,
-        value: validMintPayment,
-      };
-      // await logTimestamps(saleContract, "should revert test");
-
-      // act & assert
-      await expect(
-        saleContract.buyKeyFromSale(proof, overrides)
-      ).to.be.revertedWith("Sale is over");
-    });
-
     it(`SHOULD NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
-      // arrange
-      startSaleBlockTimestamp = toUnixTimestamp("2021-12-01");
-      stopSaleBlockTimestamp = toUnixTimestamp("2022-01-31");
-      await setup();
-
       // assert
       await expect(
         saleContract.buyKeyFromSale(validWhitelistProof(), {
@@ -186,26 +163,49 @@ describe("Sale", async () => {
         })
       ).to.emit(saleContract, "KeyWhitelistMinted").and.to.be.not.reverted;
     });
+
+    it(`SHOULD revert with "Sale is over", WHEN GIVEN a valid merkle proof AND the sale time range is from the past`, async () => {
+      await ethers.provider.send("evm_increaseTime", [5204000]);
+      await ethers.provider.send("evm_mine", []);
+
+      const proof = validWhitelistProof();
+      const overrides = {
+        from: minter.address,
+        value: validMintPayment,
+      };
+
+      // act & assert
+      await expect(
+        saleContract.buyKeyFromSale(proof, overrides)
+      ).to.be.revertedWith("Sale is over");
+    });
   });
 
-  describe("buyKeyPostSale", () => {
+  describe("buyKeyPostSale", async () => {
+    let hash: any;
+    let signature: any;
+
+    before(async () => {
+      await setup();
+      hash = ethers.utils.keccak256("0x01");
+      signature = await owner.signMessage(hash);
+    });
+
     it(`SHOULD revert with "Insufficient payment", WHEN the sale timeframe is still over AND mint payment is NOT 0.2 ether`, async () => {
       // arrange
-      const { saleContract: _saleContract } = await deployContracts(
-        toUnixTimestamp("2020-12-01"),
-        toUnixTimestamp("2021-01-31")
-      );
-      saleContract = _saleContract.connect(minter);
+
+      saleContract = saleContract.connect(minter);
       const overrides = {
         from: minter.address,
         value: invalidMintPayment,
       };
 
       // act & assert
-      await expect(saleContract.buyKeyPostSale(overrides)).to.be.reverted;
-      await expect(saleContract.buyKeyPostSale(overrides)).to.be.revertedWith(
-        "Insufficient payment"
-      );
+      await expect(saleContract.buyKeyPostSale(hash, signature, overrides)).to
+        .be.reverted;
+      await expect(
+        saleContract.buyKeyPostSale(hash, signature, overrides)
+      ).to.be.revertedWith("Insufficient payment");
     });
 
     it(`SHOULD revert with "Sale is ongoing", WHEN the sale timeframe is still on-going`, async () => {
@@ -217,47 +217,47 @@ describe("Sale", async () => {
       };
 
       // act & assert
-      await expect(saleContract.buyKeyPostSale(overrides)).to.be.reverted;
-      await expect(saleContract.buyKeyPostSale(overrides)).to.be.revertedWith(
-        "Sale is ongoing"
-      );
+      await expect(saleContract.buyKeyPostSale(hash, signature, overrides)).to
+        .be.reverted;
+      await expect(
+        saleContract.buyKeyPostSale(hash, signature, overrides)
+      ).to.be.revertedWith("Sale is ongoing");
     });
 
     it(`SHOULD NOT revert with "Sale is ongoing", WHEN the sale timeframe is over`, async () => {
-      // arrange
-      const { saleContract: _saleContract } = await deployContracts(
-        toUnixTimestamp("2020-12-01"),
-        toUnixTimestamp("2021-01-31")
-      );
-      saleContract = _saleContract.connect(minter);
+      saleContract = saleContract.connect(minter);
       const overrides = {
         from: minter.address,
         value: validMintPayment,
       };
 
       // act & assert
-      await expect(saleContract.buyKeyPostSale(overrides)).not.to.be.reverted;
+      await expect(saleContract.buyKeyPostSale(hash, signature, overrides)).not
+        .to.be.reverted;
       await expect(
-        saleContract.buyKeyPostSale(overrides)
+        saleContract.buyKeyPostSale(hash, signature, overrides)
       ).not.to.be.revertedWith("Sale is ongoing");
     });
   });
 
   describe("sellKeyForScroll", () => {
+    let hash: any;
+    let signature: any;
+    before(async () => {
+      hash = ethers.utils.solidityKeccak256(["string"], ["1"]);
+      signature = await owner.signMessage(ethers.utils.arrayify(hash));
+    });
     it(`SHOULD revert with "A date for swapping hasn't been set", WHEN the startKeyToScrollSwapTimestamp is not set`, async () => {
       // arrange
-      const { saleContract: _saleContract } = await deployContracts(
-        toUnixTimestamp("2020-12-01"),
-        toUnixTimestamp("2021-01-31")
-      );
-      saleContract = _saleContract.connect(owner);
+
+      saleContract = saleContract.connect(owner);
       const overrides = {
         from: owner.address,
       };
-
+      console.log("checking the ownershjip", owner.address, signature, hash);
       // act
       await Promise.all([
-        saleContract.buyKeyPostSale({
+        saleContract.buyKeyPostSale(hash, signature, {
           ...overrides,
           value: validMintPayment,
         }),
@@ -270,12 +270,7 @@ describe("Sale", async () => {
     });
 
     it(`SHOULD revert with "Please wait for the swapping to begin", WHEN the startKeyToScrollSwapTimestamp is not set`, async () => {
-      // arrange
-      const { saleContract: _saleContract } = await deployContracts(
-        toUnixTimestamp("2020-12-01"),
-        toUnixTimestamp("2021-01-31")
-      );
-      saleContract = _saleContract.connect(owner);
+      saleContract = saleContract.connect(owner);
       const keySwappingTimestamp = toUnixTimestamp("2023-12-05");
       const overrides = {
         from: owner.address,
@@ -283,10 +278,11 @@ describe("Sale", async () => {
 
       // act
       await Promise.all([
-        saleContract.buyKeyPostSale({
+        saleContract.buyKeyPostSale(hash, signature, {
           ...overrides,
           value: validMintPayment,
         }),
+
         saleContract.setStartKeyToScrollSwapTimestamp(
           keySwappingTimestamp,
           overrides
@@ -301,11 +297,8 @@ describe("Sale", async () => {
 
     it(`SHOULD revert with "ERC721: owner query for nonexistent token", WHEN the sale timeframe is over AND attempts to burn a key that caller doesn't own`, async () => {
       // arrange
-      const { saleContract: _saleContract } = await deployContracts(
-        toUnixTimestamp("2020-12-01"),
-        toUnixTimestamp("2021-01-31")
-      );
-      saleContract = _saleContract.connect(owner);
+
+      saleContract = saleContract.connect(owner);
       const keySwappingTimestamp = toUnixTimestamp("2020-12-05");
       const overrides = {
         from: owner.address,
@@ -313,10 +306,11 @@ describe("Sale", async () => {
 
       // act
       await Promise.all([
-        saleContract.buyKeyPostSale({
+        saleContract.buyKeyPostSale(hash, signature, {
           ...overrides,
           value: validMintPayment,
         }),
+
         saleContract.setStartKeyToScrollSwapTimestamp(
           keySwappingTimestamp,
           overrides
@@ -331,11 +325,8 @@ describe("Sale", async () => {
 
     it(`SHOULD NOT revert with "Please wait for the swapping to begin", WHEN the sale timeframe is over`, async () => {
       // arrange
-      const { saleContract: _saleContract } = await deployContracts(
-        toUnixTimestamp("2020-12-01"),
-        toUnixTimestamp("2021-01-31")
-      );
-      saleContract = _saleContract.connect(owner);
+
+      saleContract = saleContract.connect(owner);
       const keySwappingTimestamp = toUnixTimestamp("2020-12-05");
       const overrides = {
         from: owner.address,
@@ -343,10 +334,11 @@ describe("Sale", async () => {
 
       // act
       await Promise.all([
-        saleContract.buyKeyPostSale({
+        saleContract.buyKeyPostSale(hash, signature, {
           ...overrides,
           value: validMintPayment,
         }),
+
         saleContract.setStartKeyToScrollSwapTimestamp(
           keySwappingTimestamp,
           overrides
@@ -391,12 +383,7 @@ describe("Sale", async () => {
     });
 
     it(`SHOULD emit event KeyAdvisorMinted AND NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
-      // arrange
-      const { saleContract: _saleContract } = await deployContracts(
-        toUnixTimestamp("2020-12-01"),
-        toUnixTimestamp("2021-01-31")
-      );
-      saleContract = _saleContract.connect(advisor);
+      saleContract = saleContract.connect(advisor);
 
       // assert
       await expect(
