@@ -17,7 +17,7 @@ async function main() {
     process.exit(1);
   }
 
-  if (!process.env.OWNER) {
+  if (!process.env.OWNER || !process.env.WETH) {
     console.error("MISSING_ENV_VALUE: No OWNER found in `.env` file");
     process.exit(1);
   }
@@ -53,7 +53,8 @@ async function main() {
     // TODO: MAKE COMPLETELY DYNAMIC
     BigNumber.from(parseInt((currentTimestamp + 100000).toString())),
     BigNumber.from(parseInt((currentTimestamp + 100000 + 5184000).toString())),
-    process.env.OWNER
+    process.env.OWNER,
+    process.env.WETH
   );
   console.info(
     `\n[SaleContract] txHash: "${saleContract.deployTransaction.hash}"`
