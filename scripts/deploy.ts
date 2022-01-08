@@ -2,6 +2,7 @@ import hre, { ethers, upgrades } from "hardhat";
 import * as dotenv from "dotenv";
 import { useMerkleHelper } from "../helpers/merkle";
 import { toUnixTimestamp } from "../helpers/time";
+import { BigNumber } from "ethers";
 
 dotenv.config();
 
@@ -37,13 +38,19 @@ async function main() {
     parseInt((await deployer.getBalance()).toString()) / 1e18;
   console.log(`Deployer Balance: "${deployerBalance.toFixed(2)}"`);
 
+  const currentTimestamp = (
+    await ethers
+      .getDefaultProvider()
+      .getBlock(await ethers.getDefaultProvider().getBlockNumber())
+  ).timestamp;
+
   // Sale contract
   const SaleContract = await ethers.getContractFactory("Sale");
   const saleContract = await SaleContract.deploy(
     whitelistMerkleRoot,
     advisorMerkleRoot,
-    toUnixTimestamp(process.env.START_SALE_BLOCK_TIMESTAMP), // returns a BigNumber -> block.timestamp value
-    toUnixTimestamp(process.env.STOP_SALE_BLOCK_TIMESTAMP), // returns a BigNumber -> block.timestamp value
+    BigNumber.from(parseInt((currentTimestamp + 100000).toString())),
+    BigNumber.from(parseInt((currentTimestamp + 100000 + 5184000).toString())),
     process.env.OWNER
   );
   console.info(

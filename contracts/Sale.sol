@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IKeys} from "./interface/IKeys.sol";
 import {IScroll} from "./interface/IScroll.sol";
@@ -31,7 +32,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice The mint price for a key
    */
-  uint256 public constant MINT_PRICE = 0.2 ether;
+  uint256 public constant MINT_PRICE = 0.2;
+  uint256 decimals = 1e18;
+  IERC20 WETH;
 
   /**
    * @notice 9696 + 303 = 9999 Total Supply
@@ -81,7 +84,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     bytes32 _advisorMerkleRoot,
     uint256 _startSaleBlockTimestamp,
     uint256 _stopSaleBlockTimestamp,
-    address _publicVerification
+    address _publicVerification,
+    IERC20 _WETH
   ) {
     require(_startSaleBlockTimestamp >= block.timestamp, "Invalid start date");
     require(
@@ -96,6 +100,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
     startSaleBlockTimestamp = _startSaleBlockTimestamp;
     stopSaleBlockTimestamp = _stopSaleBlockTimestamp;
+    WETH = _WETH;
   }
 
   /**
@@ -224,7 +229,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   function buyKeyFromSale(bytes32[] calldata _proof)
     external
-    payable
     nonReentrant
     canAffordMintPrice
     isSaleOnGoing
@@ -235,6 +239,10 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     );
     require(!_publicSaleClaimedStatus[msg.sender], "Already claimed");
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "All minted");
+    require(
+      WETH.transferFrom(msg.sender, address(this), MINT_PRICE * decimals),
+      "Not allowed or low funds"
+    );
 
     publicKeyMintCount++;
     _publicSaleClaimedStatus[msg.sender] = true;
@@ -251,7 +259,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   function buyKeyPostSale(bytes32 hash, bytes calldata signature)
     external
-    payable
     nonReentrant
     canAffordMintPrice
     hasSaleEnded
@@ -266,6 +273,11 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     require(
       ECDSA.recover(hash, signature) == (publicVerificationAddress),
       "Signature Verification Failed"
+    );
+
+    require(
+      WETH.transferFrom(msg.sender, address(this), MINT_PRICE * decimals),
+      "Not allowed or low funds"
     );
 
     publicKeyMintCount++;
@@ -395,7 +407,10 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   }
 
   function withdraw(address _targetAddress) external onlyOwner {
-    address payable targetAddress = payable(_targetAddress);
-    targetAddress.transfer(address(this).balance);
+    WETH.transferFrom(
+      address(this),
+      _targetAddress,
+      publicKeyMintCount * MINT_PRICE * decimals
+    );
   }
 }
