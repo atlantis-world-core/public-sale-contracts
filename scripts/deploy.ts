@@ -49,6 +49,8 @@ async function main() {
   const saleContract = await SaleContract.deploy(
     whitelistMerkleRoot,
     advisorMerkleRoot,
+
+    // TODO: MAKE COMPLETELY DYNAMIC
     BigNumber.from(parseInt((currentTimestamp + 100000).toString())),
     BigNumber.from(parseInt((currentTimestamp + 100000 + 5184000).toString())),
     process.env.OWNER
