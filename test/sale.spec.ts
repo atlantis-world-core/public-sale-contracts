@@ -223,16 +223,15 @@ describe("Sale", async () => {
       ).to.be.revertedWith("Sale is ongoing");
     });
 
-    
     // TODO: @rachit2501 this needs to get fixed
     // Exception
     // AssertionError: Expected transaction to be reverted with Sale is ongoing,
-    // but other exception was thrown: Error: VM Exception while processing transaction: 
+    // but other exception was thrown: Error: VM Exception while processing transaction:
     // reverted with reason string 'Signature Verification Failed'
     it(`SHOULD NOT revert with "Sale is ongoing", WHEN the sale timeframe is over`, async () => {
       await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
       await ethers.provider.send("evm_mine", []);
-      
+
       saleContract = saleContract.connect(minter);
       const overrides = {
         from: minter.address,
@@ -247,7 +246,7 @@ describe("Sale", async () => {
       // ).not.to.be.revertedWith("Sale is ongoing");
 
       // TODO: To remove this and uncomment assertion above
-      // this was meant to have a wrong assertion to reveal the exception 
+      // this was meant to have a wrong assertion to reveal the exception
       // message above
       await expect(
         saleContract.buyKeyPostSale(hash, signature, overrides)
@@ -264,7 +263,8 @@ describe("Sale", async () => {
     });
     it(`SHOULD revert with "A date for swapping hasn't been set", WHEN the startKeyToScrollSwapTimestamp is not set`, async () => {
       // arrange
-
+      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
+      await ethers.provider.send("evm_mine", []);
       saleContract = saleContract.connect(owner);
       const overrides = {
         from: owner.address,
@@ -285,8 +285,12 @@ describe("Sale", async () => {
     });
 
     it(`SHOULD revert with "Please wait for the swapping to begin", WHEN the startKeyToScrollSwapTimestamp is not set`, async () => {
+      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
+      await ethers.provider.send("evm_mine", []);
       saleContract = saleContract.connect(owner);
-      const keySwappingTimestamp = toUnixTimestamp("2023-12-05");
+      const now = await getCurrentBlockTimestamp();
+      const keySwappingTimestamp =
+        bigNumberToBlockTimestamp(now) + BLOCK_ONE_WEEK * 4;
       const overrides = {
         from: owner.address,
       };
@@ -299,7 +303,7 @@ describe("Sale", async () => {
         }),
 
         saleContract.setStartKeyToScrollSwapTimestamp(
-          keySwappingTimestamp,
+          BigNumber.from(keySwappingTimestamp),
           overrides
         ),
       ]);
@@ -312,9 +316,12 @@ describe("Sale", async () => {
 
     it(`SHOULD revert with "ERC721: owner query for nonexistent token", WHEN the sale timeframe is over AND attempts to burn a key that caller doesn't own`, async () => {
       // arrange
-
+      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
+      await ethers.provider.send("evm_mine", []);
       saleContract = saleContract.connect(owner);
-      const keySwappingTimestamp = toUnixTimestamp("2020-12-05");
+      const now = await getCurrentBlockTimestamp();
+      const keySwappingTimestamp =
+        bigNumberToBlockTimestamp(now) + BLOCK_ONE_WEEK * 4;
       const overrides = {
         from: owner.address,
       };
@@ -327,10 +334,14 @@ describe("Sale", async () => {
         }),
 
         saleContract.setStartKeyToScrollSwapTimestamp(
-          keySwappingTimestamp,
+          BigNumber.from(keySwappingTimestamp),
           overrides
         ),
       ]);
+      await ethers.provider.send("evm_increaseTime", [
+        BLOCK_ONE_WEEK * 4 + BLOCK_ONE_DAY * 2,
+      ]);
+      await ethers.provider.send("evm_mine", []);
 
       // assert
       await expect(
@@ -340,9 +351,12 @@ describe("Sale", async () => {
 
     it(`SHOULD NOT revert with "Please wait for the swapping to begin", WHEN the sale timeframe is over`, async () => {
       // arrange
-
+      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
+      await ethers.provider.send("evm_mine", []);
       saleContract = saleContract.connect(owner);
-      const keySwappingTimestamp = toUnixTimestamp("2020-12-05");
+      const now = await getCurrentBlockTimestamp();
+      const keySwappingTimestamp =
+        bigNumberToBlockTimestamp(now) + BLOCK_ONE_WEEK * 4;
       const overrides = {
         from: owner.address,
       };
@@ -355,10 +369,14 @@ describe("Sale", async () => {
         }),
 
         saleContract.setStartKeyToScrollSwapTimestamp(
-          keySwappingTimestamp,
+          BigNumber.from(keySwappingTimestamp),
           overrides
         ),
       ]);
+      await ethers.provider.send("evm_increaseTime", [
+        BLOCK_ONE_WEEK * 4 + BLOCK_ONE_DAY,
+      ]);
+      await ethers.provider.send("evm_mine", []);
 
       // assert
       await expect(saleContract.sellKeyForScroll(1, overrides)).not.to.be
@@ -412,11 +430,14 @@ describe("Sale", async () => {
   describe("setStartKeyToScrollSwapTimestamp", () => {
     it(`SHOULD NOT revert, WHEN the owner makes the call`, async () => {
       // arrange
+      const now = await getCurrentBlockTimestamp();
+      const keySwappingTimestamp =
+        bigNumberToBlockTimestamp(now) + BLOCK_ONE_WEEK * 4;
       saleContract = saleContract.connect(owner);
 
       // act & assert
       await expect(
-        saleContract.setStartKeyToScrollSwapTimestamp(startSaleBlockTimestamp)
+        saleContract.setStartKeyToScrollSwapTimestamp(keySwappingTimestamp)
       ).to.emit(saleContract, "NewStartKeyToScrollSwapTimestamp").and.to.be.not
         .reverted;
     });
