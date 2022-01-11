@@ -8,6 +8,12 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { testSetup } from "./utils";
 import { DeployContractsFunction, TestSetupArgs } from "./utils/types";
 import MerkleTree from "merkletreejs";
+import {
+  bigNumberToBlockTimestamp,
+  BLOCK_ONE_DAY,
+  BLOCK_ONE_WEEK,
+  getCurrentBlockTimestamp,
+} from "../utils";
 
 describe("Sale", async () => {
   const merkleHelper = useMerkleHelper();
@@ -87,25 +93,25 @@ describe("Sale", async () => {
     whitelistMerkleTree = _whitelistMerkleTree;
     deployContracts = _deployContracts;
 
-    const currentTimestamp = (
-      await ethers
-        .getDefaultProvider()
-        .getBlock(await ethers.getDefaultProvider().getBlockNumber())
-    ).timestamp;
+    const now = await getCurrentBlockTimestamp();
+    const start = bigNumberToBlockTimestamp(now) + BLOCK_ONE_DAY;
 
     // Sale contract deploy
     const { saleContract: _saleContract, scrollContract: _scrollContract } =
       await deployContracts(
-        BigNumber.from(parseInt((currentTimestamp + 1000).toString())),
-        BigNumber.from(parseInt((currentTimestamp + 1000 + 5184000).toString()))
+        BigNumber.from(start),
+        BigNumber.from(start + BLOCK_ONE_WEEK)
       );
 
     // connect as a minter
     saleContract = _saleContract.connect(minter);
   };
 
+  beforeEach(async () => {
+    await setup();
+  });
+
   describe("mintPrice", () => {
-    beforeEach(async () => await setup());
     // a very basic test, just so we can easily confirm the test setup is working as expected
     it("SHOULD return 0.2 ether, WHEN called", async () => {
       const mintPrice = await saleContract.MINT_PRICE();
@@ -116,7 +122,6 @@ describe("Sale", async () => {
   });
 
   describe("buyKeyFromSale", () => {
-    before(async () => await setup());
     it(`SHOULD revert with "Insufficient payment", WHEN GIVEN an invalid mint price AND the sale is still on-going`, async () => {
       // arrange
       saleContract = saleContract.connect(minter);
@@ -132,7 +137,7 @@ describe("Sale", async () => {
     });
 
     it(`SHOULD revert with "Not eligible", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
-      await ethers.provider.send("evm_increaseTime", [1000]);
+      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_DAY * 3]);
       await ethers.provider.send("evm_mine", []);
 
       const badMerkleProof: string[] = [];
@@ -148,6 +153,8 @@ describe("Sale", async () => {
     });
 
     it(`SHOULD NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
+      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_DAY * 3]);
+      await ethers.provider.send("evm_mine", []);
       // assert
       await expect(
         saleContract.buyKeyFromSale(validWhitelistProof(), {
@@ -158,7 +165,7 @@ describe("Sale", async () => {
     });
 
     it(`SHOULD revert with "Sale is over", WHEN GIVEN a valid merkle proof AND the sale time range is from the past`, async () => {
-      await ethers.provider.send("evm_increaseTime", [5204000]);
+      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
       await ethers.provider.send("evm_mine", []);
 
       const proof = validWhitelistProof();
@@ -179,7 +186,6 @@ describe("Sale", async () => {
     let signature: any;
 
     before(async () => {
-      await setup();
       hash = ethers.utils.keccak256("0x01");
       signature = await owner.signMessage(hash);
     });
@@ -217,7 +223,16 @@ describe("Sale", async () => {
       ).to.be.revertedWith("Sale is ongoing");
     });
 
+    
+    // TODO: @rachit2501 this needs to get fixed
+    // Exception
+    // AssertionError: Expected transaction to be reverted with Sale is ongoing,
+    // but other exception was thrown: Error: VM Exception while processing transaction: 
+    // reverted with reason string 'Signature Verification Failed'
     it(`SHOULD NOT revert with "Sale is ongoing", WHEN the sale timeframe is over`, async () => {
+      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
+      await ethers.provider.send("evm_mine", []);
+      
       saleContract = saleContract.connect(minter);
       const overrides = {
         from: minter.address,
@@ -225,11 +240,18 @@ describe("Sale", async () => {
       };
 
       // act & assert
-      await expect(saleContract.buyKeyPostSale(hash, signature, overrides)).not
-        .to.be.reverted;
+      // await expect(saleContract.buyKeyPostSale(hash, signature, overrides)).not
+      //   .to.be.reverted;
+      // await expect(
+      //   saleContract.buyKeyPostSale(hash, signature, overrides)
+      // ).not.to.be.revertedWith("Sale is ongoing");
+
+      // TODO: To remove this and uncomment assertion above
+      // this was meant to have a wrong assertion to reveal the exception 
+      // message above
       await expect(
         saleContract.buyKeyPostSale(hash, signature, overrides)
-      ).not.to.be.revertedWith("Sale is ongoing");
+      ).to.be.revertedWith("Sale is ongoing");
     });
   });
 
@@ -348,7 +370,6 @@ describe("Sale", async () => {
   });
 
   describe("preMint", () => {
-    before(async () => await setup());
     it(`SHOULD revert with "Not in the advisory list", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
       // arrange
       saleContract = saleContract.connect(advisor);
