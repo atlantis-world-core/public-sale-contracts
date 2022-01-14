@@ -329,7 +329,7 @@ describe("Sale", async () => {
         }),
 
         saleContract.setStartKeyToScrollSwapTimestamp(
-          currentTimestamp + 1,
+          currentTimestamp + 1000000000,
           overrides
         ),
       ]);
@@ -338,6 +338,38 @@ describe("Sale", async () => {
       await expect(
         saleContract.sellKeyForScroll(1, overrides)
       ).to.be.revertedWith("Please wait for the swapping to begin");
+    });
+
+    it(`SHOULD NOT revert with "Please wait for the swapping to begin", WHEN the sale timeframe is over`, async () => {
+      // arrange
+
+      saleContract = saleContract.connect(owner);
+
+      const currentTimestamp = (
+        await ethers
+          .getDefaultProvider()
+          .getBlock(await ethers.getDefaultProvider().getBlockNumber())
+      ).timestamp;
+
+      const overrides = {
+        from: owner.address,
+      };
+
+      // act
+      await saleContract.buyKeyPostSale(hash, signature, {
+        ...overrides,
+      });
+      await saleContract.setStartKeyToScrollSwapTimestamp(
+        currentTimestamp, // no increment required, since condition is block.timestamp >= currentTimestamp
+        overrides
+      );
+
+      // assert
+      await expect(saleContract.sellKeyForScroll(1, overrides)).not.to.be
+        .reverted;
+      await expect(
+        saleContract.sellKeyForScroll(1, overrides)
+      ).not.to.be.revertedWith("Please wait for the swapping to begin");
     });
 
     it(`SHOULD revert with "ERC721: owner query for nonexistent token", WHEN the sale timeframe is over AND attempts to burn a key that caller doesn't own`, async () => {
@@ -357,28 +389,6 @@ describe("Sale", async () => {
       await expect(
         saleContract.sellKeyForScroll(5, overrides)
       ).to.be.revertedWith("ERC721: owner query for nonexistent token");
-    });
-
-    it(`SHOULD NOT revert with "Please wait for the swapping to begin", WHEN the sale timeframe is over`, async () => {
-      // arrange
-
-      saleContract = saleContract.connect(owner);
-
-      const overrides = {
-        from: owner.address,
-      };
-
-      // act
-      await saleContract.buyKeyPostSale(hash, signature, {
-        ...overrides,
-      });
-
-      // assert
-      await expect(saleContract.sellKeyForScroll(1, overrides)).not.to.be
-        .reverted;
-      await expect(
-        saleContract.sellKeyForScroll(1, overrides)
-      ).not.to.be.revertedWith("Please wait for the swapping to begin");
     });
   });
 

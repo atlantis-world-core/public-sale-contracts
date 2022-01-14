@@ -331,6 +331,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     external
     onlyOwner
   {
+    console.log(_timestamp, block.timestamp);
     require(_timestamp >= block.timestamp, "Invalid timestamp");
 
     startKeyToScrollSwapTimestamp = _timestamp;
