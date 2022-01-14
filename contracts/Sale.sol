@@ -92,16 +92,16 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     address _publicVerification,
     IERC20 _WETH
   ) {
+    console.log(
+      _startSaleBlockTimestamp,
+      _stopSaleBlockTimestamp,
+      block.timestamp
+    );
     require(_startSaleBlockTimestamp >= block.timestamp, "Invalid start date");
     require(
       _stopSaleBlockTimestamp >= block.timestamp &&
         _stopSaleBlockTimestamp > _startSaleBlockTimestamp,
       "Invalid stop date"
-    );
-    console.log(
-      _startSaleBlockTimestamp,
-      _stopSaleBlockTimestamp,
-      block.timestamp
     );
 
     publicVerificationAddress = _publicVerification;
@@ -187,7 +187,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   modifier canKeySwapped() {
     require(
-      // TODO: To verify with team
       startKeyToScrollSwapTimestamp != 0,
       "A date for swapping hasn't been set"
     );
@@ -202,7 +201,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
    * @param _proof Merkle proof for the advisory list merkle root
    */
-  function preMint(bytes32[] calldata _proof)
+  function advisoryMint(bytes32[] calldata _proof)
     external
     whenNotPaused
     nonReentrant
