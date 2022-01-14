@@ -5,9 +5,11 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IKeys} from "./interface/IKeys.sol";
 import {IScroll} from "./interface/IScroll.sol";
+import "hardhat/console.sol";
 
 /// @title A controller for the entire club sale
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
@@ -29,9 +31,12 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   address private publicVerificationAddress;
 
   /**
-   * @notice The mint price for a key
+   * @notice The mint price for a key = 0.2 ETH
    */
-  uint256 public constant MINT_PRICE = 0.2 ether;
+  uint256 public constant MINT_PRICE = (2 * 1e18) / 10;
+
+  /// @notice WETH Contract
+  IERC20 WETH;
 
   /**
    * @notice 9696 + 303 = 9999 Total Supply
@@ -61,6 +66,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   uint256 public stopSaleBlockTimestamp;
 
+  /// @notice For assigning an address the right to withdraw funds
+  address private targetAddress;
+
   /// @notice to keep track if the advisor / user whitelisted has already claimed the NFT
   mapping(address => bool) private _publicSaleClaimedStatus;
   mapping(address => bool) private _advisoryClaimedStatus;
@@ -81,8 +89,14 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     bytes32 _advisorMerkleRoot,
     uint256 _startSaleBlockTimestamp,
     uint256 _stopSaleBlockTimestamp,
-    address _publicVerification
+    address _publicVerification,
+    IERC20 _WETH
   ) {
+    console.log(
+      _startSaleBlockTimestamp,
+      _stopSaleBlockTimestamp,
+      block.timestamp
+    );
     require(_startSaleBlockTimestamp >= block.timestamp, "Invalid start date");
     require(
       _stopSaleBlockTimestamp >= block.timestamp &&
@@ -96,6 +110,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
     startSaleBlockTimestamp = _startSaleBlockTimestamp;
     stopSaleBlockTimestamp = _stopSaleBlockTimestamp;
+    WETH = _WETH;
   }
 
   /**
@@ -148,14 +163,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   }
 
   /**
-   * @notice Validates if the sender has enough ether to mint a key
-   */
-  modifier canAffordMintPrice() {
-    require(msg.value >= MINT_PRICE, "Insufficient payment");
-    _;
-  }
-
-  /**
    * @notice Validates if the current block timestamp is still under the sale timestamp range
    */
   modifier isSaleOnGoing() {
@@ -180,7 +187,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   modifier canKeySwapped() {
     require(
-      // TODO: To verify with team
       startKeyToScrollSwapTimestamp != 0,
       "A date for swapping hasn't been set"
     );
@@ -195,7 +201,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
    * @param _proof Merkle proof for the advisory list merkle root
    */
-  function preMint(bytes32[] calldata _proof)
+  function advisoryMint(bytes32[] calldata _proof)
     external
     whenNotPaused
     nonReentrant
@@ -224,9 +230,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   function buyKeyFromSale(bytes32[] calldata _proof)
     external
-    payable
     nonReentrant
-    canAffordMintPrice
     isSaleOnGoing
   {
     require(
@@ -235,6 +239,10 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     );
     require(!_publicSaleClaimedStatus[msg.sender], "Already claimed");
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "All minted");
+    require(
+      WETH.transferFrom(msg.sender, address(this), MINT_PRICE),
+      "Not allowed or low funds"
+    );
 
     publicKeyMintCount++;
     _publicSaleClaimedStatus[msg.sender] = true;
@@ -247,25 +255,25 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice
    * For general public to mint tokens, who weren't listed in the
-   * whitelist. Will only work for a max of 6969 keys.
+   * whitelist. Will only work for a max of 9696 keys.
    */
   function buyKeyPostSale(bytes32 hash, bytes calldata signature)
     external
-    payable
     nonReentrant
-    canAffordMintPrice
     hasSaleEnded
     whenNotPaused
   {
-    require(
-      publicKeyMintCount + advisoryKeyLimitCount < PUBLIC_KEY_LIMIT,
-      "Mint limit reached"
-    );
+    require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "Mint limit reached");
 
     hash = ECDSA.toEthSignedMessageHash(hash);
     require(
       ECDSA.recover(hash, signature) == (publicVerificationAddress),
       "Signature Verification Failed"
+    );
+
+    require(
+      WETH.transferFrom(msg.sender, address(this), MINT_PRICE),
+      "Not allowed or low funds"
     );
 
     publicKeyMintCount++;
@@ -293,6 +301,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
   /**
    * @notice Minting unminted tokens to treasury
+   * @dev EIP2309 hasn't been implemented due to lack of clarity on implementation. The EIP only specifies the event, not the implementation.
    * @param _treasuryAddress The treasury address for Atlantis World
    */
   function mintLeftOvers(address _treasuryAddress)
@@ -300,7 +309,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     onlyOwner
     whenNotPaused
   {
-    // TODO: EIP 2809 implementation
     for (
       uint256 i = 0;
       i < TOTAL_SUPPLY - (publicKeyMintCount + advisoryKeyLimitCount);
@@ -323,6 +331,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     external
     onlyOwner
   {
+    console.log(_timestamp, block.timestamp);
     require(_timestamp >= block.timestamp, "Invalid timestamp");
 
     startKeyToScrollSwapTimestamp = _timestamp;
@@ -394,8 +403,17 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     return keccak256(abi.encodePacked(_sender));
   }
 
-  function withdraw(address _targetAddress) external onlyOwner {
-    address payable targetAddress = payable(_targetAddress);
-    targetAddress.transfer(address(this).balance);
+  function approveWithdrawelAddress(address _targetAddress) external onlyOwner {
+    targetAddress = _targetAddress;
+  }
+
+  function withdraw() external onlyOwner {
+    require(msg.sender == targetAddress, "Not the assigned address");
+
+    WETH.transferFrom(
+      address(this),
+      targetAddress,
+      publicKeyMintCount * MINT_PRICE
+    );
   }
 }

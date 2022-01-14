@@ -51,12 +51,16 @@ export const testSetup = async () => {
       signer: owner,
     });
 
+    const WETH = await ethers.getContractFactory("MockWETH");
+    const wethContract = await WETH.deploy();
+
     const saleContract = await SaleContract.deploy(
       whitelistMerkleRoot,
       advisorMerkleRoot,
       startSaleBlockTimestamp ?? BigNumber.from(0),
       stopSaleBlockTimestamp ?? BigNumber.from(0),
-      owner.address
+      owner.address,
+      wethContract.address
     );
     const mockSaleContract = await deployMockContract(owner, SaleABI.abi);
     await saleContract.deployed();
@@ -85,6 +89,7 @@ export const testSetup = async () => {
       keysContract,
       scrollContract,
       mockSaleContract,
+      wethContract,
     };
   };
 

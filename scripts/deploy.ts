@@ -2,6 +2,7 @@ import hre, { ethers, upgrades } from "hardhat";
 import * as dotenv from "dotenv";
 import { useMerkleHelper } from "../helpers/merkle";
 import { toUnixTimestamp } from "../helpers/time";
+import { BigNumber } from "ethers";
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ async function main() {
     process.exit(1);
   }
 
-  if (!process.env.OWNER) {
+  if (!process.env.OWNER || !process.env.WETH) {
     console.error("MISSING_ENV_VALUE: No OWNER found in `.env` file");
     process.exit(1);
   }
@@ -37,13 +38,23 @@ async function main() {
     parseInt((await deployer.getBalance()).toString()) / 1e18;
   console.log(`Deployer Balance: "${deployerBalance.toFixed(2)}"`);
 
+  const currentTimestamp = (
+    await ethers
+      .getDefaultProvider()
+      .getBlock(await ethers.getDefaultProvider().getBlockNumber())
+  ).timestamp;
+
   // Sale contract
   const SaleContract = await ethers.getContractFactory("Sale");
   const saleContract = await SaleContract.deploy(
     whitelistMerkleRoot,
     advisorMerkleRoot,
-    toUnixTimestamp(process.env.START_SALE_BLOCK_TIMESTAMP), // returns a BigNumber -> block.timestamp value
-    toUnixTimestamp(process.env.STOP_SALE_BLOCK_TIMESTAMP) // returns a BigNumber -> block.timestamp value
+
+    // TODO: MAKE COMPLETELY DYNAMIC
+    BigNumber.from(parseInt((currentTimestamp + 100000).toString())),
+    BigNumber.from(parseInt((currentTimestamp + 100000 + 5184000).toString())),
+    process.env.OWNER,
+    process.env.WETH
   );
   console.info(
     `\n[SaleContract] txHash: "${saleContract.deployTransaction.hash}"`
