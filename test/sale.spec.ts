@@ -3,7 +3,7 @@ import { toUnixTimestamp } from "../helpers/time";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Sale } from "../typechain";
+import { MockWETH, Sale } from "../typechain";
 import { BigNumber } from "@ethersproject/bignumber";
 import { testSetup } from "./utils";
 import { DeployContractsFunction, TestSetupArgs } from "./utils/types";
@@ -14,12 +14,13 @@ describe("Sale", async () => {
 
   // contracts
   let saleContract: Sale;
+  let wethContract: MockWETH;
 
   // helper
 
   let deployContracts: DeployContractsFunction;
 
-  let startSaleBlockTimestamp: BigNumber = BigNumber.from(
+  const startSaleBlockTimestamp: BigNumber = BigNumber.from(
     (await ethers.provider.getBlock(await ethers.provider.getBlockNumber()))
       .timestamp
   );
@@ -60,6 +61,7 @@ describe("Sale", async () => {
 
   // ether
   const validMintPayment = ethers.utils.parseEther("0.2");
+  console.log(validMintPayment);
   const invalidMintPayment = ethers.utils.parseEther("0.01");
 
   const setup = async (args?: TestSetupArgs) => {
@@ -94,14 +96,19 @@ describe("Sale", async () => {
     ).timestamp;
 
     // Sale contract deploy
-    const { saleContract: _saleContract, scrollContract: _scrollContract } =
-      await deployContracts(
-        BigNumber.from(parseInt((currentTimestamp + 1000).toString())),
-        BigNumber.from(parseInt((currentTimestamp + 1000 + 5184000).toString()))
-      );
+    const {
+      saleContract: _saleContract,
+      scrollContract: _scrollContract,
+      mockSaleContract,
+      wethContract: _wethContract,
+    } = await deployContracts(
+      BigNumber.from(parseInt((currentTimestamp + 1000).toString())),
+      BigNumber.from(parseInt((currentTimestamp + 1000 + 5184000).toString()))
+    );
 
     // connect as a minter
     saleContract = _saleContract.connect(minter);
+    wethContract = _wethContract;
   };
 
   describe("mintPrice", () => {
@@ -117,18 +124,17 @@ describe("Sale", async () => {
 
   describe("buyKeyFromSale", () => {
     before(async () => await setup());
-    it(`SHOULD revert with "Insufficient payment", WHEN GIVEN an invalid mint price AND the sale is still on-going`, async () => {
+    it(`SHOULD revert with "Not allowed or low funds", WHEN GIVEN an invalid mint price AND the sale is still on-going`, async () => {
       // arrange
       saleContract = saleContract.connect(minter);
       const overrides = {
         from: minter.address,
-        value: invalidMintPayment,
       };
 
       // act & assert
       await expect(
         saleContract.buyKeyFromSale(invalidMerkleProof(), overrides)
-      ).to.be.revertedWith("Insufficient payment");
+      ).to.be.revertedWith("Not allowed or low funds");
     });
 
     it(`SHOULD revert with "Not eligible", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
@@ -138,7 +144,6 @@ describe("Sale", async () => {
       const badMerkleProof: string[] = [];
       const overrides = {
         from: minter.address,
-        value: validMintPayment,
       };
 
       // act & assert
@@ -148,11 +153,11 @@ describe("Sale", async () => {
     });
 
     it(`SHOULD NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
+      await wethContract.approve(saleContract.address, validMintPayment);
       // assert
       await expect(
         saleContract.buyKeyFromSale(validWhitelistProof(), {
           from: minter.address,
-          value: validMintPayment,
         })
       ).to.emit(saleContract, "KeyWhitelistMinted").and.to.be.not.reverted;
     });
@@ -164,7 +169,6 @@ describe("Sale", async () => {
       const proof = validWhitelistProof();
       const overrides = {
         from: minter.address,
-        value: validMintPayment,
       };
 
       // act & assert
@@ -206,7 +210,6 @@ describe("Sale", async () => {
       saleContract = saleContract.connect(minter);
       const overrides = {
         from: minter.address,
-        value: validMintPayment,
       };
 
       // act & assert
@@ -221,7 +224,6 @@ describe("Sale", async () => {
       saleContract = saleContract.connect(minter);
       const overrides = {
         from: minter.address,
-        value: validMintPayment,
       };
 
       // act & assert
@@ -252,7 +254,6 @@ describe("Sale", async () => {
       await Promise.all([
         saleContract.buyKeyPostSale(hash, signature, {
           ...overrides,
-          value: validMintPayment,
         }),
       ]);
 
@@ -273,7 +274,6 @@ describe("Sale", async () => {
       await Promise.all([
         saleContract.buyKeyPostSale(hash, signature, {
           ...overrides,
-          value: validMintPayment,
         }),
 
         saleContract.setStartKeyToScrollSwapTimestamp(
@@ -301,7 +301,6 @@ describe("Sale", async () => {
       await Promise.all([
         saleContract.buyKeyPostSale(hash, signature, {
           ...overrides,
-          value: validMintPayment,
         }),
 
         saleContract.setStartKeyToScrollSwapTimestamp(
@@ -329,7 +328,6 @@ describe("Sale", async () => {
       await Promise.all([
         saleContract.buyKeyPostSale(hash, signature, {
           ...overrides,
-          value: validMintPayment,
         }),
 
         saleContract.setStartKeyToScrollSwapTimestamp(

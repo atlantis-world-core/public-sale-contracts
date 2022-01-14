@@ -15,14 +15,14 @@ contract TestSale is Sale {
   {}
 
   function echidna_publicKeyCount() external view returns (bool) {
-    return publicKeyMintCount <= 6666;
+    return publicKeyMintCount <= PUBLIC_KEY_LIMIT;
   }
 
   function echidna_advisoryKeyLimit() external view returns (bool) {
-    return advisoryKeyLimitCount <= 303;
+    return advisoryKeyLimitCount <= ADVISORY_KEY_LIMIT;
   }
 
   function echidna_publicPlusAdvisory() external view returns (bool) {
-    return publicKeyMintCount + advisoryKeyLimitCount <= 6969;
+    return publicKeyMintCount + advisoryKeyLimitCount <= 9999;
   }
 }

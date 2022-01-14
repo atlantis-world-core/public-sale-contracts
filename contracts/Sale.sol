@@ -30,7 +30,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   address private publicVerificationAddress;
 
   /**
-   * @notice The mint price for a key
+   * @notice The mint price for a key = 0.2 ETH
    */
   uint256 public constant MINT_PRICE = (2 * 1e18) / 10;
 
@@ -250,7 +250,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice
    * For general public to mint tokens, who weren't listed in the
-   * whitelist. Will only work for a max of 6969 keys.
+   * whitelist. Will only work for a max of 9696 keys.
    */
   function buyKeyPostSale(bytes32 hash, bytes calldata signature)
     external
@@ -258,10 +258,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     hasSaleEnded
     whenNotPaused
   {
-    require(
-      publicKeyMintCount + advisoryKeyLimitCount < PUBLIC_KEY_LIMIT,
-      "Mint limit reached"
-    );
+    require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "Mint limit reached");
 
     hash = ECDSA.toEthSignedMessageHash(hash);
     require(
@@ -299,6 +296,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
   /**
    * @notice Minting unminted tokens to treasury
+   * @dev EIP2309 hasn't been implemented due to lack of clarity on implementation. The EIP only specifies the event, not the implementation.
    * @param _treasuryAddress The treasury address for Atlantis World
    */
   function mintLeftOvers(address _treasuryAddress)
@@ -306,7 +304,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     onlyOwner
     whenNotPaused
   {
-    // TODO: EIP 2809 implementation
     for (
       uint256 i = 0;
       i < TOTAL_SUPPLY - (publicKeyMintCount + advisoryKeyLimitCount);
