@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IKeys} from "./interface/IKeys.sol";
 import {IScroll} from "./interface/IScroll.sol";
+import "hardhat/console.sol";
 
 /// @title A controller for the entire club sale
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
@@ -96,6 +97,11 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       _stopSaleBlockTimestamp >= block.timestamp &&
         _stopSaleBlockTimestamp > _startSaleBlockTimestamp,
       "Invalid stop date"
+    );
+    console.log(
+      _startSaleBlockTimestamp,
+      _stopSaleBlockTimestamp,
+      block.timestamp
     );
 
     publicVerificationAddress = _publicVerification;

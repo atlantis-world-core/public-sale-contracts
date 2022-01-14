@@ -96,15 +96,11 @@ describe("Sale", async () => {
     ).timestamp;
 
     // Sale contract deploy
-    const {
-      saleContract: _saleContract,
-      scrollContract: _scrollContract,
-      mockSaleContract,
-      wethContract: _wethContract,
-    } = await deployContracts(
-      BigNumber.from(parseInt((currentTimestamp + 1000).toString())),
-      BigNumber.from(parseInt((currentTimestamp + 1000 + 5184000).toString()))
-    );
+    const { saleContract: _saleContract, wethContract: _wethContract } =
+      await deployContracts(
+        BigNumber.from(parseInt((currentTimestamp + 1000).toString())),
+        BigNumber.from(parseInt((currentTimestamp + 1000 + 5184000).toString()))
+      );
 
     // connect as a minter
     saleContract = _saleContract.connect(minter);
@@ -124,18 +120,6 @@ describe("Sale", async () => {
 
   describe("buyKeyFromSale", () => {
     before(async () => await setup());
-    it(`SHOULD revert with "Not allowed or low funds", WHEN GIVEN an invalid mint price AND the sale is still on-going`, async () => {
-      // arrange
-      saleContract = saleContract.connect(minter);
-      const overrides = {
-        from: minter.address,
-      };
-
-      // act & assert
-      await expect(
-        saleContract.buyKeyFromSale(invalidMerkleProof(), overrides)
-      ).to.be.revertedWith("Not allowed or low funds");
-    });
 
     it(`SHOULD revert with "Not eligible", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
       await ethers.provider.send("evm_increaseTime", [1000]);
@@ -152,8 +136,24 @@ describe("Sale", async () => {
       ).to.be.revertedWith("Not eligible");
     });
 
+    it(`SHOULD revert with "ERC20: transfer amount exceeds balance", WHEN GIVEN an invalid mint price AND the sale is still on-going`, async () => {
+      // arrange
+      saleContract = saleContract.connect(minter);
+      const overrides = {
+        from: minter.address,
+      };
+
+      // act & assert
+      await expect(
+        saleContract.buyKeyFromSale(validWhitelistProof(), overrides)
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    });
+
     it(`SHOULD NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
-      await wethContract.approve(saleContract.address, validMintPayment);
+      await wethContract.mint(minter.address, "20000000000000000000000000000");
+      await wethContract
+        .connect(minter)
+        .approve(saleContract.address, validMintPayment);
       // assert
       await expect(
         saleContract.buyKeyFromSale(validWhitelistProof(), {
