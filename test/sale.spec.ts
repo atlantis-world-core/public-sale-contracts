@@ -60,9 +60,7 @@ describe("Sale", async () => {
   const invalidMerkleProof = (): string[] => [];
 
   // ether
-  const validMintPayment = ethers.utils.parseEther("0.2");
-  console.log(validMintPayment);
-  const invalidMintPayment = ethers.utils.parseEther("0.01");
+  const validMintPayment = ethers.utils.parseEther("0.22");
 
   const setup = async (args?: any) => {
     const {
@@ -118,7 +116,7 @@ describe("Sale", async () => {
       const mintPrice = await saleContract.MINT_PRICE();
 
       // assert
-      expect(ethers.utils.formatEther(mintPrice)).to.be.equal("0.2");
+      expect(ethers.utils.formatEther(mintPrice)).to.be.equal("0.22");
     });
   });
 
@@ -213,27 +211,21 @@ describe("Sale", async () => {
   });
 
   describe("buyKeyPostSale", async () => {
-    let hash: any;
-    let signature: any;
-
     before(async () => {
       await setup({ offset: 8000000 }); // evm_mine working inside blockchain, but the result from ethers is not, so adding an offset to fix
-      hash = ethers.utils.solidityKeccak256(["string"], ["1"]);
-      signature = await owner.signMessage(ethers.utils.arrayify(hash));
     });
 
     it(`SHOULD revert with "Sale is ongoing", WHEN the sale timeframe is still on-going`, async () => {
+      const hash = ethers.utils.solidityKeccak256(["string"], ["1"]);
+      const signature = await owner.signMessage(ethers.utils.arrayify(hash));
       // arrange
       saleContract = saleContract.connect(minter);
       const overrides = {
         from: minter.address,
       };
 
-      // act & assert
-      await expect(saleContract.buyKeyPostSale(hash, signature, overrides)).to
-        .be.reverted;
       await expect(
-        saleContract.buyKeyPostSale(hash, signature, overrides)
+        saleContract.buyKeyPostSale("1", signature, overrides)
       ).to.be.revertedWith("Sale is ongoing");
     });
 
@@ -241,6 +233,9 @@ describe("Sale", async () => {
       await ethers.provider.send("evm_increaseTime", [100000000]);
       await ethers.provider.send("evm_mine", []);
 
+      const hash = ethers.utils.solidityKeccak256(["string"], ["2"]);
+      const signature = await owner.signMessage(ethers.utils.arrayify(hash));
+
       saleContract = saleContract.connect(minter);
       const overrides = {
         from: minter.address,
@@ -251,12 +246,19 @@ describe("Sale", async () => {
         .approve(saleContract.address, "20000000000000000000000000");
 
       await expect(
-        saleContract.buyKeyPostSale(hash, signature, overrides)
+        saleContract.buyKeyPostSale("2", signature, overrides)
       ).not.to.be.revertedWith("Sale is ongoing");
     });
 
-    it(`SHOULD revert with "Insufficient payment", when the sale timeframe is  over AND mint payment is NOT 0.2 ether`, async () => {
+    it(`SHOULD not revert and hash should work`, async () => {
       // arrange
+
+      const hash = ethers.utils.solidityKeccak256(
+        ["address", "string"],
+        [minter.address, "3"]
+      );
+
+      const signature = await owner.signMessage(ethers.utils.arrayify(hash));
 
       await wethContract.mint(minter.address, "20000000000000000000000000");
       await wethContract
@@ -268,108 +270,16 @@ describe("Sale", async () => {
         from: minter.address,
       };
 
-      await expect(saleContract.buyKeyPostSale(hash, signature, overrides)).to
-        .not.be.reverted;
+      await expect(saleContract.buyKeyPostSale("3", signature, overrides)).to
+        .not.reverted;
     });
   });
 
   describe("sellKeyForScroll", () => {
-    let hash: any;
-    let signature: any;
-    before(async () => {
-      hash = ethers.utils.solidityKeccak256(["string"], ["1"]);
-      signature = await owner.signMessage(ethers.utils.arrayify(hash));
-    });
-
     it("Start key to scroll swap timestamp is zero", async () => {
       expect(
         (await saleContract.startKeyToScrollSwapTimestamp()).toString()
       ).to.equal("0");
-    });
-
-    it(`SHOULD revert with "A date for swapping hasn't been set", WHEN the startKeyToScrollSwapTimestamp is not set`, async () => {
-      // arrange
-      await wethContract.mint(owner.address, "20000000000000000000000000");
-      await wethContract
-        .connect(owner)
-        .approve(saleContract.address, "20000000000000000000000000");
-      saleContract = saleContract.connect(owner);
-
-      const overrides = {
-        from: owner.address,
-      };
-
-      // act
-      await saleContract.buyKeyPostSale(hash, signature, {
-        ...overrides,
-      });
-
-      // assert
-      await expect(
-        saleContract.sellKeyForScroll(1, overrides)
-      ).to.be.revertedWith("A date for swapping hasn't been set");
-    });
-
-    it(`SHOULD revert with "Please wait for the swapping to begin", WHEN the startKeyToScrollSwapTimestamp is not set`, async () => {
-      saleContract = saleContract.connect(owner);
-
-      const overrides = {
-        from: owner.address,
-      };
-      const currentTimestamp = (
-        await ethers
-          .getDefaultProvider()
-          .getBlock(await ethers.getDefaultProvider().getBlockNumber())
-      ).timestamp;
-
-      // act
-      await Promise.all([
-        saleContract.buyKeyPostSale(hash, signature, {
-          ...overrides,
-        }),
-
-        saleContract.setStartKeyToScrollSwapTimestamp(
-          currentTimestamp + 1000000000,
-          overrides
-        ),
-      ]);
-
-      // assert
-      await expect(
-        saleContract.sellKeyForScroll(1, overrides)
-      ).to.be.revertedWith("Please wait for the swapping to begin");
-    });
-
-    it(`SHOULD NOT revert with "Please wait for the swapping to begin", WHEN the sale timeframe is over`, async () => {
-      // arrange
-
-      saleContract = saleContract.connect(owner);
-
-      const currentTimestamp = (
-        await ethers
-          .getDefaultProvider()
-          .getBlock(await ethers.getDefaultProvider().getBlockNumber())
-      ).timestamp;
-
-      const overrides = {
-        from: owner.address,
-      };
-
-      // act
-      await saleContract.buyKeyPostSale(hash, signature, {
-        ...overrides,
-      });
-      await saleContract.setStartKeyToScrollSwapTimestamp(
-        currentTimestamp, // no increment required, since condition is block.timestamp >= currentTimestamp
-        overrides
-      );
-
-      // assert
-      await expect(saleContract.sellKeyForScroll(1, overrides)).not.to.be
-        .reverted;
-      await expect(
-        saleContract.sellKeyForScroll(1, overrides)
-      ).not.to.be.revertedWith("Please wait for the swapping to begin");
     });
 
     it(`SHOULD revert with "ERC721: owner query for nonexistent token", WHEN the sale timeframe is over AND attempts to burn a key that caller doesn't own`, async () => {
@@ -381,8 +291,15 @@ describe("Sale", async () => {
         from: owner.address,
       };
 
+      wethContract.mint(minter.address, "200000000000000000000");
+      wethContract.approve(saleContract.address, "200000000000000000000");
+      const hash = ethers.utils.solidityKeccak256(
+        ["address", "string"],
+        [owner.address, "4"]
+      );
+      const signature = await owner.signMessage(ethers.utils.arrayify(hash));
       // act
-      await saleContract.buyKeyPostSale(hash, signature, {
+      await saleContract.buyKeyPostSale("4", signature, {
         ...overrides,
       });
       // assert

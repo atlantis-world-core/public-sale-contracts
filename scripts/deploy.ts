@@ -46,11 +46,18 @@ async function main() {
 
   // Sale contract
   const SaleContract = await ethers.getContractFactory("Sale");
+  console.log(
+    "SaleContract Argument...",
+    whitelistMerkleRoot,
+    advisorMerkleRoot,
+    BigNumber.from(parseInt((currentTimestamp + 100000).toString())),
+    BigNumber.from(parseInt((currentTimestamp + 100000 + 5184000).toString())),
+    process.env.OWNER,
+    process.env.WETH
+  );
   const saleContract = await SaleContract.deploy(
     whitelistMerkleRoot,
     advisorMerkleRoot,
-
-    // TODO: MAKE COMPLETELY DYNAMIC
     BigNumber.from(parseInt((currentTimestamp + 100000).toString())),
     BigNumber.from(parseInt((currentTimestamp + 100000 + 5184000).toString())),
     process.env.OWNER,

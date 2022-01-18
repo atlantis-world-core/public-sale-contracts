@@ -14,6 +14,7 @@ import {IScroll} from "./interface/IScroll.sol";
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
 /// @author Rachit Anand Srivastava, Carlo Miguel Dy
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
+
 contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice Key contracts
@@ -30,19 +31,19 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   address private publicVerificationAddress;
 
   /**
-   * @notice The mint price for a key = 0.2 ETH
+   * @notice The mint price for a key = 0.22 ETH
    */
-  uint256 public constant MINT_PRICE = (2 * 1e18) / 10;
+  uint256 public constant MINT_PRICE = (22 * 1e18) / 100;
 
   /// @notice WETH Contract
   IERC20 WETH;
 
   /**
-   * @notice 9696 + 303 = 9999 Total Supply
+   * @notice 9700 + 299 = 9999 Total Supply
    * @notice `PUBLIC_KEY_LIMIT` + `ADVISORY_KEY_LIMIT` = `TOTAL_SUPPLY` Total Supply
    */
-  uint256 public constant PUBLIC_KEY_LIMIT = 9696;
-  uint256 public constant ADVISORY_KEY_LIMIT = 303;
+  uint256 public constant PUBLIC_KEY_LIMIT = 9700;
+  uint256 public constant ADVISORY_KEY_LIMIT = 299;
   uint256 public constant TOTAL_SUPPLY = PUBLIC_KEY_LIMIT + ADVISORY_KEY_LIMIT;
 
   /**
@@ -71,6 +72,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /// @notice to keep track if the advisor / user whitelisted has already claimed the NFT
   mapping(address => bool) private _publicSaleClaimedStatus;
   mapping(address => bool) private _advisoryClaimedStatus;
+
+  /// @notice to keep track of used nonces during the public sale
+  mapping(string => bool) private _usedNonces;
 
   /**
    * @notice The timestamp for when swapping keys for a scroll begins
@@ -177,21 +181,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   }
 
   /**
-   * @notice Validates if the swapping of key for a scroll is enabled or for when a date is set
-   */
-  modifier canKeySwapped() {
-    require(
-      startKeyToScrollSwapTimestamp != 0,
-      "A date for swapping hasn't been set"
-    );
-    require(
-      block.timestamp >= startKeyToScrollSwapTimestamp,
-      "Please wait for the swapping to begin"
-    );
-    _;
-  }
-
-  /**
    * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
    * @param _proof Merkle proof for the advisory list merkle root
    */
@@ -246,12 +235,32 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     emit KeyWhitelistMinted(msg.sender);
   }
 
+  /// @notice to generate the hash using the nonce and the msg.sender
+  function hashTransaction(address sender, string memory nonce)
+    private
+    pure
+    returns (bytes32)
+  {
+    bytes32 hash = keccak256(abi.encodePacked(sender, nonce));
+
+    return ECDSA.toEthSignedMessageHash(hash);
+  }
+
+  /// @notice compares the recovered signer address using the hash to the public address of the signing key
+  function matchAddressSigner(bytes32 hash, bytes memory signature)
+    public
+    view
+    returns (bool)
+  {
+    return ECDSA.recover(hash, signature) == (publicVerificationAddress);
+  }
+
   /**
    * @notice
    * For general public to mint tokens, who weren't listed in the
    * whitelist. Will only work for a max of 9696 keys.
    */
-  function buyKeyPostSale(bytes32 hash, bytes calldata signature)
+  function buyKeyPostSale(string calldata nonce, bytes calldata signature)
     external
     nonReentrant
     hasSaleEnded
@@ -259,16 +268,18 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   {
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "Mint limit reached");
 
-    hash = ECDSA.toEthSignedMessageHash(hash);
     require(
-      ECDSA.recover(hash, signature) == (publicVerificationAddress),
+      matchAddressSigner(hashTransaction(msg.sender, nonce), signature),
       "Signature Verification Failed"
     );
 
+    require(!_usedNonces[nonce], "Hash Already Used");
     require(
       WETH.transferFrom(msg.sender, address(this), MINT_PRICE),
       "Not allowed or low funds"
     );
+
+    _usedNonces[nonce] = true;
 
     publicKeyMintCount++;
 
@@ -283,7 +294,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   function sellKeyForScroll(uint256 _tokenId)
     external
     nonReentrant
-    canKeySwapped
     whenNotPaused
   {
     _keysContract.burnKeyOfUser(_tokenId, msg.sender);
