@@ -273,6 +273,31 @@ describe("Sale", async () => {
       await expect(saleContract.buyKeyPostSale("3", signature, overrides)).to
         .not.reverted;
     });
+
+    it(`SHOULD revert if nonce already used`, async () => {
+      // arrange
+
+      const hash = ethers.utils.solidityKeccak256(
+        ["address", "string"],
+        [minter.address, "3"]
+      );
+
+      const signature = await owner.signMessage(ethers.utils.arrayify(hash));
+
+      await wethContract.mint(minter.address, "20000000000000000000000000");
+      await wethContract
+        .connect(minter)
+        .approve(saleContract.address, "20000000000000000000000000");
+
+      saleContract = saleContract.connect(minter);
+      const overrides = {
+        from: minter.address,
+      };
+
+      await expect(
+        saleContract.buyKeyPostSale("3", signature, overrides)
+      ).to.be.revertedWith("Hash Already Used");
+    });
   });
 
   describe("sellKeyForScroll", () => {
