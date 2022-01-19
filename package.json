@@ -6,6 +6,7 @@
     "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.ts --network localhost",
     "deploy:mumbai": "hardhat run scripts/deploy.ts --network mumbai",
+    "deploy:polygon": "hardhat run scripts/deploy.ts --network polygon",
     "coverage": "hardhat coverage",
     "start": "hardhat node",
     "postinstall": "yarn compile"
