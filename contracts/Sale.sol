@@ -314,7 +314,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   {
     _keysContract.burnKeyOfUser(_tokenId, msg.sender);
 
-    _scrollContract.mint(msg.sender, _tokenId);
+    bool isAdvisoryMinter = _advisoryClaimedStatus[msg.sender];
+
+    _scrollContract.mint(msg.sender, isAdvisoryMinter);
 
     emit KeySwapped(msg.sender, _tokenId);
   }

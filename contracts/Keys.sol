@@ -2,9 +2,11 @@
 pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "./@eip2981/ERC2981ContractWideRoyalties.sol";
 
 /// @title Keys Contract, for managing the behaviour of ERC721 keys
@@ -12,21 +14,36 @@ import "./@eip2981/ERC2981ContractWideRoyalties.sol";
 /// @notice Contract is used for tracking the keys claimed. These are non transferable erc721 contracts.
 contract Keys is
   ERC721Enumerable,
+  ERC721URIStorage,
   AccessControl,
   Ownable,
   ERC2981ContractWideRoyalties
 {
   using Address for address;
   using Strings for uint256;
+  using Counters for Counters.Counter;
 
   bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
 
-  string internal baseURI;
+  /**
+   * @notice 9700 + 299 = 9999 Total Supply
+   */
+  uint256 public constant TOTAL_SUPPLY = 9999;
+
+  /**
+   * @dev The tokenURI or IPFS CID for the magical key NFT.
+   */
+  string public magicalKeyTokenURI;
 
   /**
    * @notice The current mint count
    */
-  uint256 private mintCount = 0;
+  Counters.Counter private _tokenIds;
+
+  /**
+   * @dev Keep track of keys burned
+   */
+  Counters.Counter private _burnedKeys;
 
   /**
    * @notice Emits when a Key gets minted to a user
@@ -59,6 +76,20 @@ contract Keys is
   }
 
   /**
+   * @dev Get the current mint count
+   */
+  function getTotalMintCount() external view returns (uint256) {
+    return _tokenIds.current();
+  }
+
+  /**
+   * @dev Get the current keys burned count
+   */
+  function getTotalBurnedKeysCount() external view returns (uint256) {
+    return _burnedKeys.current();
+  }
+
+  /**
    * @param amount The amount of royalties to be set.
    */
   function setRoyalties(uint256 amount) external onlyOwner {
@@ -66,18 +97,14 @@ contract Keys is
   }
 
   /**
-   * @dev See {IERC165-supportsInterface}.
+   * @param _magicalKeyTokenURI The CID for the magical key NFT.
+   * @dev Set the magical key token URI anytime.
    */
-  function supportsInterface(bytes4 _interfaceId)
-    public
-    view
-    override(ERC721Enumerable, AccessControl, ERC2981Base)
-    returns (bool)
+  function setMagicalKeyTokenURI(string calldata _magicalKeyTokenURI)
+    external
+    onlyOwner
   {
-    return
-      _interfaceId == type(IERC721).interfaceId ||
-      _interfaceId == type(IERC721Metadata).interfaceId ||
-      super.supportsInterface(_interfaceId);
+    magicalKeyTokenURI = _magicalKeyTokenURI;
   }
 
   /**
@@ -85,14 +112,17 @@ contract Keys is
    * @dev The contract can be called form the sale contract only
    */
   function mintKeyToUser(address _user)
-    public
+    external
     notAddressZero(_user)
     onlyRole(SALE_CONTRACT_ROLE)
   {
-    require(mintCount < 6969, "All tokens minted");
+    require(_tokenIds.current() < TOTAL_SUPPLY, "All tokens minted");
 
-    mintCount++;
-    _safeMint(_user, mintCount);
+    _tokenIds.increment();
+    uint256 currentTokenId = _tokenIds.current();
+
+    _safeMint(_user, currentTokenId);
+    _setTokenURI(currentTokenId, magicalKeyTokenURI);
 
     emit KeyMinted(_user);
   }
@@ -102,28 +132,74 @@ contract Keys is
    * @dev The contract can be called form the sale contract only
    */
   function burnKeyOfUser(uint256 _tokenId, address _user)
-    public
+    external
     notAddressZero(_user)
     onlyRole(SALE_CONTRACT_ROLE)
   {
     require(ownerOf(_tokenId) == _user, "Not the owner of the NFT");
 
+    _burnedKeys.increment();
     _burn(_tokenId);
 
     emit KeyBurned(_tokenId, _user);
   }
 
   /**
-   * @notice To set the `baseURI` value
+   * @notice To set the `tokenURI` for a specific `tokenId`
    */
-  function _baseURI() internal view override returns (string memory) {
-    return baseURI;
+  function setTokenURIForTokenId(uint256 tokenId, string memory _tokenURI)
+    external
+    onlyOwner
+  {
+    _setTokenURI(tokenId, _tokenURI);
+  }
+
+  /// @inheritdoc ERC721URIStorage
+  function tokenURI(uint256 tokenId)
+    public
+    view
+    virtual
+    override(ERC721URIStorage, ERC721)
+    returns (string memory)
+  {
+    return super.tokenURI(tokenId);
   }
 
   /**
-   * @notice To set the `baseURI` value
+   * @dev See {IERC165-supportsInterface}.
    */
-  function setTokenURI(string calldata _uri) public onlyOwner {
-    baseURI = _uri;
+  function supportsInterface(bytes4 _interfaceId)
+    public
+    view
+    override(ERC721Enumerable, AccessControl, ERC2981Base, ERC721)
+    returns (bool)
+  {
+    return
+      _interfaceId == type(IERC721).interfaceId ||
+      _interfaceId == type(IERC721Metadata).interfaceId ||
+      super.supportsInterface(_interfaceId);
+  }
+
+  /// @inheritdoc ERC721URIStorage
+  function _burn(uint256 tokenId)
+    internal
+    virtual
+    override(ERC721URIStorage, ERC721)
+  {
+    super._burn(tokenId);
+  }
+
+  /// @inheritdoc ERC721Enumerable
+  function _beforeTokenTransfer(
+    address from,
+    address to,
+    uint256 tokenId
+  ) internal virtual override(ERC721Enumerable, ERC721) {
+    super._beforeTokenTransfer(from, to, tokenId);
+  }
+
+  /// @inheritdoc ERC721
+  function _baseURI() internal view virtual override returns (string memory) {
+    return "ipfs://";
   }
 }
