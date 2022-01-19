@@ -6,6 +6,8 @@ import {
   JAN_22_END_SALE_TIMESTAMP,
   JAN_22_START_SALE_TIMESTAMP,
 } from "../utils";
+import ADVISORY_WHITELIST from "../helpers/advisory-whitelist.json";
+import ALPHA_SALE_WHITELIST from "../helpers/alpha-sale-whitelist.json";
 
 dotenv.config();
 
@@ -199,42 +201,24 @@ async function main() {
 function generateMerkleRoots() {
   const merkleHelper = useMerkleHelper();
 
-  // TODO: To be replaced with a JSON file reference
-  const WHITELISTED_USERS = (process.env.WHITELISTED_USERS ?? "")
-    .split(",")
-    .map((key) => key.trim())
-    .filter((leaf) => leaf);
-
-  // TODO: To be replaced with a JSON file reference
-  const ADVISOR_WHITELISTED_USERS = (
-    process.env.ADVISOR_WHITELISTED_USERS ?? ""
-  )
-    .split(",")
-    .map((key) => key.trim())
-    .filter((leaf) => leaf);
-
   // checks if both arrays are empty, throw exception to stop smart contract deployment
-  if (
-    WHITELISTED_USERS.length === 0 ||
-    ADVISOR_WHITELISTED_USERS.length === 0
-  ) {
+  if (ALPHA_SALE_WHITELIST.length === 0 || ADVISORY_WHITELIST.length === 0) {
     console.error(
       "EMPTY_LEAVES: Either the whitelist leaves or the advisory leaves is empty."
     );
     process.exit(1);
   }
 
-  console.log("\n[generateMerkleRoots] WHITELISTED_USERS", WHITELISTED_USERS);
   console.log(
-    "[generateMerkleRoots] ADVISOR_WHITELISTED_USERS\n",
-    ADVISOR_WHITELISTED_USERS
+    "\n[generateMerkleRoots] ALPHA_SALE_WHITELIST",
+    ALPHA_SALE_WHITELIST
   );
+  console.log("[generateMerkleRoots] ADVISORY_WHITELIST\n", ADVISORY_WHITELIST);
 
   // merkle trees
-  const whitelistMerkleTree = merkleHelper.createMerkleTree(WHITELISTED_USERS);
-  const advisorMerkleTree = merkleHelper.createMerkleTree(
-    ADVISOR_WHITELISTED_USERS
-  );
+  const whitelistMerkleTree =
+    merkleHelper.createMerkleTree(ALPHA_SALE_WHITELIST);
+  const advisorMerkleTree = merkleHelper.createMerkleTree(ADVISORY_WHITELIST);
 
   console.log(
     "\n[generateMerkleRoots] whitelistMerkleTree",
