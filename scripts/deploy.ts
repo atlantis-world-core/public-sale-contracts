@@ -12,12 +12,12 @@ import ALPHA_SALE_WHITELIST from "../helpers/alpha-sale-whitelist.json";
 dotenv.config();
 
 // Just toggle this to `true` when it's finally ready for Polygon Mainnet
-const polygonMainnetReady = false;
-const network = polygonMainnetReady ? "Mainnet" : "Mumbai Testnet";
+const polygonMainnetReady = true;
+const networkName = polygonMainnetReady ? "Mainnet" : "Mumbai Testnet";
 const WETH_ADDRESS = "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
 
 async function main() {
-  console.log(`✨ Polygon ${network} deployment initializing...\n\n\n`);
+  console.log(`✨ Polygon ${networkName} deployment initializing...\n\n\n`);
 
   const rl = readline.createInterface({
     input: process.stdin,
@@ -65,13 +65,13 @@ async function main() {
   const question1 = () => {
     return new Promise<boolean>((resolve, reject) => {
       rl.question(
-        `The deployer is "${deployer.address}", do you want to proceed?: (y/n) `,
+        `\n\nThe deployer is "${deployer.address}", do you want to proceed?: (y/n) `,
         (answer) => {
           if (answer.toLowerCase() === "y") {
             return resolve(true);
           }
 
-          return reject(false);
+          return resolve(false);
         }
       );
     });
@@ -81,13 +81,13 @@ async function main() {
   const question2 = () => {
     return new Promise<boolean>((resolve, reject) => {
       rl.question(
-        `The deployer's balance is "${deployerBalance}", do you want to proceed?: (y/n) `,
+        `\n\nThe deployer's balance is "${deployerBalance}", do you want to proceed?: (y/n) `,
         (answer) => {
           if (answer.toLowerCase() === "y") {
             return resolve(true);
           }
 
-          return reject(false);
+          return resolve(false);
         }
       );
     });
@@ -97,7 +97,7 @@ async function main() {
   const question3 = () => {
     return new Promise<boolean>((resolve, reject) => {
       rl.question(
-        `The starting sale timestamp is "${START_SALE_TIMESTAMP} (${startSaleTimestampDateFormat})" and ending sale timestamp is "${END_SALE_TIMESTAMP} (${endSaleTimestampDateFormat})", do you want to proceed?: (y/n) `,
+        `\n\nThe starting sale timestamp is "${START_SALE_TIMESTAMP} (${startSaleTimestampDateFormat})" and ending sale timestamp is "${END_SALE_TIMESTAMP} (${endSaleTimestampDateFormat})", do you want to proceed?: (y/n) `,
         (answer) => {
           if (answer.toLowerCase() === "y") {
             return resolve(true);
@@ -126,15 +126,14 @@ async function main() {
 
   // Sale contract
   const SaleContract = await ethers.getContractFactory("Sale");
-  console.log(
-    "SaleContract Argument...",
-    whitelistMerkleRoot,
-    advisorMerkleRoot,
-    START_SALE_TIMESTAMP,
-    END_SALE_TIMESTAMP,
-    process.env.OWNER,
-    WETH_ADDRESS
-  );
+  console.log("SaleContract Argument...", [
+    `whitelistMerkleRoot=${whitelistMerkleRoot}`,
+    `advisorMerkleRoot=${advisorMerkleRoot}`,
+    `START_SALE_TIMESTAMP=${START_SALE_TIMESTAMP}`,
+    `END_SALE_TIMESTAMP=${END_SALE_TIMESTAMP}`,
+    `process.env.OWNER=${process.env.OWNER}`,
+    `WETH_ADDRESS=${WETH_ADDRESS}`,
+  ]);
   const saleContract = await SaleContract.deploy(
     whitelistMerkleRoot,
     advisorMerkleRoot,
@@ -196,6 +195,15 @@ async function main() {
     keyContractOwner,
     scrollContractOwner,
   });
+
+  const network = polygonMainnetReady ? "polygonMainnet" : "mumbai";
+  console.log("\n\n\nVerify the smart contracts with the suggested commands:", [
+    `npx hardhat verify --network ${network} ${saleContract.address} ${whitelistMerkleRoot} ${advisorMerkleRoot} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${process.env.OWNER} ${WETH_ADDRESS}`,
+    `npx hardhat verify --network ${network} ${keyContract.address} ${saleContract.address}`,
+    `npx hardhat verify --network ${network} ${scrollContract.address} ${saleContract.address}`,
+  ]);
+
+  return process.exit(0);
 }
 
 function generateMerkleRoots() {
@@ -209,22 +217,22 @@ function generateMerkleRoots() {
     process.exit(1);
   }
 
-  console.log(
-    "\n[generateMerkleRoots] ALPHA_SALE_WHITELIST",
-    ALPHA_SALE_WHITELIST
-  );
-  console.log("[generateMerkleRoots] ADVISORY_WHITELIST\n", ADVISORY_WHITELIST);
+  // console.log(
+  //   "\n[generateMerkleRoots] ALPHA_SALE_WHITELIST",
+  //   ALPHA_SALE_WHITELIST
+  // );
+  // console.log("[generateMerkleRoots] ADVISORY_WHITELIST\n", ADVISORY_WHITELIST);
 
   // merkle trees
   const whitelistMerkleTree =
     merkleHelper.createMerkleTree(ALPHA_SALE_WHITELIST);
   const advisorMerkleTree = merkleHelper.createMerkleTree(ADVISORY_WHITELIST);
 
-  console.log(
-    "\n[generateMerkleRoots] whitelistMerkleTree",
-    whitelistMerkleTree
-  );
-  console.log("[generateMerkleRoots] advisorMerkleTree\n", advisorMerkleTree);
+  // console.log(
+  //   "\n[generateMerkleRoots] whitelistMerkleTree",
+  //   whitelistMerkleTree
+  // );
+  // console.log("[generateMerkleRoots] advisorMerkleTree\n", advisorMerkleTree);
 
   // merkle roots
   const whitelistMerkleRoot =
@@ -232,10 +240,13 @@ function generateMerkleRoots() {
   const advisorMerkleRoot = merkleHelper.createMerkleRoot(advisorMerkleTree);
 
   console.log(
-    "\n[generateMerkleRoots] whitelistMerkleRoot",
+    "Merkle root generated for Alpha Sale whitelist\n",
     whitelistMerkleRoot
   );
-  console.log("[generateMerkleRoots] advisorMerkleRoot\n", advisorMerkleRoot);
+  console.log(
+    "Merkle root generated for advisory whitelist\n\n",
+    advisorMerkleRoot
+  );
 
   return {
     whitelistMerkleRoot,
