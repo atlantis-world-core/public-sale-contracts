@@ -14,7 +14,6 @@ import {IScroll} from "./interface/IScroll.sol";
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
 /// @author Rachit Anand Srivastava, Carlo Miguel Dy
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
-
 contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice Key contracts

@@ -86,14 +86,10 @@ contract ScrollContract is
     baseURI = _uri;
   }
 
-  // *********
-  // ROYALTIES
-  // *********
-
   /**
    * @dev {EIP2981 - https://eips.ethereum.org/EIPS/eip-2981}
    */
-  function setRoyalties(
+  function setRaribleRoyalties(
     uint256 _tokenId,
     address payable _royaltiesReceipientAddress,
     uint96 _percentageBasisPoints
@@ -116,17 +112,20 @@ contract ScrollContract is
     override(ERC721EnumerableUpgradeable, AccessControlUpgradeable, ERC2981Base)
     returns (bool)
   {
-    if (_interfaceId == LibRoyaltiesV2._INTERFACE_ID_ROYALTIES) {
-      return true;
-    }
-
-    return super.supportsInterface(_interfaceId);
+    return
+      _interfaceId == LibRoyaltiesV2._INTERFACE_ID_ROYALTIES ||
+      super.supportsInterface(_interfaceId);
   }
 
   /**
    * @notice Just a fund safe function
    */
   function withdraw(address _targetAddress) external onlyOwner {
+    require(
+      _targetAddress != address(0),
+      "The target address must not be empty."
+    );
+
     address payable targetAddress = payable(_targetAddress);
     targetAddress.transfer(address(this).balance);
   }
