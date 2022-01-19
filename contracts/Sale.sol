@@ -181,6 +181,28 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   }
 
   /**
+   * @dev Checks if the sender is whitelisted
+   */
+  function isAlphaSaleWhitelist(bytes32[] calldata _proof)
+    public
+    view
+    returns (bool)
+  {
+    return MerkleProof.verify(_proof, whitelistMerkleRoot, _leaf(msg.sender));
+  }
+
+  /**
+   * @dev Checks if the sender is whitelisted
+   */
+  function isAdvisoryWhitelist(bytes32[] calldata _proof)
+    public
+    view
+    returns (bool)
+  {
+    return MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender));
+  }
+
+  /**
    * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
    * @param _proof Merkle proof for the advisory list merkle root
    */
@@ -189,10 +211,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     whenNotPaused
     nonReentrant
   {
-    require(
-      MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender)),
-      "Not in the advisory list"
-    );
+    require(isAdvisoryWhitelist(_proof), "Not in the advisory list");
     require(!_advisoryClaimedStatus[msg.sender], "Already claimed");
     require(
       advisoryKeyLimitCount < ADVISORY_KEY_LIMIT,
@@ -216,10 +235,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     nonReentrant
     isSaleOnGoing
   {
-    require(
-      MerkleProof.verify(_proof, whitelistMerkleRoot, _leaf(msg.sender)),
-      "Not eligible"
-    );
+    require(isAlphaSaleWhitelist(_proof), "Not eligible");
     require(!_publicSaleClaimedStatus[msg.sender], "Already claimed");
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "All minted");
     require(
@@ -267,12 +283,10 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     whenNotPaused
   {
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "Mint limit reached");
-
     require(
       matchAddressSigner(hashTransaction(msg.sender, nonce), signature),
       "Signature Verification Failed"
     );
-
     require(!_usedNonces[nonce], "Hash Already Used");
     require(
       WETH.transferFrom(msg.sender, address(this), MINT_PRICE),
@@ -406,12 +420,22 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     return keccak256(abi.encodePacked(_sender));
   }
 
-  function approveWithdrawelAddress(address _targetAddress) external onlyOwner {
+  /**
+   * @dev Set the address to where funds gets transferred into.
+   */
+  function setWithdrawalAddress(address _targetAddress) external onlyOwner {
     targetAddress = _targetAddress;
   }
 
+  /**
+   * @dev Withdraws the amount of funds received to the `targetAddress`
+   */
   function withdraw() external onlyOwner {
-    require(msg.sender == targetAddress, "Not the assigned address");
+    require(msg.sender == targetAddress, "Not the assigned address.");
+    require(
+      targetAddress != address(0),
+      "The targetAddress is an empty address."
+    );
 
     WETH.transferFrom(
       address(this),
