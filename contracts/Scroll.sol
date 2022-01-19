@@ -47,6 +47,16 @@ contract ScrollContract is
    */
   Counters.Counter private _tokenIds;
 
+  /**
+   * @dev All advisory token IDs
+   */
+  uint256[] private _advisoryTokenIds;
+
+  /**
+   * @dev All public token IDs
+   */
+  uint256[] private _publicTokenIds;
+
   event UpdatedRoyalties(address newRoyaltyAddress, uint256 newPercentage);
 
   /**
@@ -64,6 +74,20 @@ contract ScrollContract is
     __ERC721_init("Atlantis World: Founding Atlantean Scrolls", "AWFAS");
     __Ownable_init();
     _setRoyalties(msg.sender, 10000);
+  }
+
+  /**
+   * @dev Get a list of all advisory token IDs
+   */
+  function getAdvisoryTokenIds() external view returns (uint256[] memory) {
+    return _advisoryTokenIds;
+  }
+
+  /**
+   * @dev Get a list of all public token IDs
+   */
+  function getPublicTokenIds() external view returns (uint256[] memory) {
+    return _publicTokenIds;
   }
 
   /**
@@ -106,6 +130,12 @@ contract ScrollContract is
 
     _tokenIds.increment();
     uint256 currentTokenId = _tokenIds.current();
+
+    if (isAdvisoryMinter) {
+      _advisoryTokenIds.push(currentTokenId);
+    } else {
+      _publicTokenIds.push(currentTokenId);
+    }
 
     _safeMint(_user, currentTokenId);
     _setTokenURI(
