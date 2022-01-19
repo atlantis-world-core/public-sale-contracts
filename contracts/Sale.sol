@@ -76,6 +76,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   /// @notice to keep track of used nonces during the public sale
   mapping(string => bool) private _usedNonces;
 
+  /// @dev Keeps track of the mint count for the minter address
+  mapping(address => uint256) private _addressToMintCount;
+
   /**
    * @notice The timestamp for when swapping keys for a scroll begins
    */
@@ -181,6 +184,14 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   }
 
   /**
+   * @dev Gets the current mint count of an address.
+   * @param minter The minter's address
+   */
+  function getAddressMintCount(address minter) external view returns (uint256) {
+    return _addressToMintCount[minter];
+  }
+
+  /**
    * @dev Checks if the sender is whitelisted
    */
   function isAlphaSaleWhitelist(bytes32[] calldata _proof)
@@ -202,6 +213,15 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     return MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender));
   }
 
+  /// @notice compares the recovered signer address using the hash to the public address of the signing key
+  function matchAddressSigner(bytes32 hash, bytes memory signature)
+    public
+    view
+    returns (bool)
+  {
+    return ECDSA.recover(hash, signature) == (publicVerificationAddress);
+  }
+
   /**
    * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
    * @param _proof Merkle proof for the advisory list merkle root
@@ -220,6 +240,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
     advisoryKeyLimitCount++;
     _advisoryClaimedStatus[msg.sender] = true;
+    _addressToMintCount[msg.sender]++;
 
     _keysContract.mintKeyToUser(msg.sender);
 
@@ -245,30 +266,11 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
     publicKeyMintCount++;
     _publicSaleClaimedStatus[msg.sender] = true;
+    _addressToMintCount[msg.sender]++;
 
     _keysContract.mintKeyToUser(msg.sender);
 
     emit KeyWhitelistMinted(msg.sender);
-  }
-
-  /// @notice to generate the hash using the nonce and the msg.sender
-  function hashTransaction(address sender, string memory nonce)
-    private
-    pure
-    returns (bytes32)
-  {
-    bytes32 hash = keccak256(abi.encodePacked(sender, nonce));
-
-    return ECDSA.toEthSignedMessageHash(hash);
-  }
-
-  /// @notice compares the recovered signer address using the hash to the public address of the signing key
-  function matchAddressSigner(bytes32 hash, bytes memory signature)
-    public
-    view
-    returns (bool)
-  {
-    return ECDSA.recover(hash, signature) == (publicVerificationAddress);
   }
 
   /**
@@ -287,6 +289,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       matchAddressSigner(hashTransaction(msg.sender, nonce), signature),
       "Signature Verification Failed"
     );
+    require(_addressToMintCount[msg.sender] <= 3, "You can only mint 3 times.");
     require(!_usedNonces[nonce], "Hash Already Used");
     require(
       WETH.transferFrom(msg.sender, address(this), MINT_PRICE),
@@ -294,8 +297,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     );
 
     _usedNonces[nonce] = true;
-
     publicKeyMintCount++;
+    _addressToMintCount[msg.sender]++;
 
     _keysContract.mintKeyToUser(msg.sender);
 
@@ -335,6 +338,17 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
     publicKeyMintCount = PUBLIC_KEY_LIMIT;
     advisoryKeyLimitCount = ADVISORY_KEY_LIMIT;
+  }
+
+  /// @notice to generate the hash using the nonce and the msg.sender
+  function hashTransaction(address sender, string memory nonce)
+    private
+    pure
+    returns (bytes32)
+  {
+    bytes32 hash = keccak256(abi.encodePacked(sender, nonce));
+
+    return ECDSA.toEthSignedMessageHash(hash);
   }
 
   // *************
