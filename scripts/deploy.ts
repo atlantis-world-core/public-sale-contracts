@@ -196,7 +196,7 @@ async function main() {
     scrollContractOwner,
   });
 
-  const network = polygonMainnetReady ? "polygonMainnet" : "mumbai";
+  const network = polygonMainnetReady ? "polygon" : "mumbai";
   console.log("\n\n\nVerify the smart contracts with the suggested commands:", [
     `npx hardhat verify --network ${network} ${saleContract.address} ${whitelistMerkleRoot} ${advisorMerkleRoot} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${process.env.OWNER} ${WETH_ADDRESS}`,
     `npx hardhat verify --network ${network} ${keyContract.address} ${saleContract.address}`,
@@ -217,22 +217,10 @@ function generateMerkleRoots() {
     process.exit(1);
   }
 
-  // console.log(
-  //   "\n[generateMerkleRoots] ALPHA_SALE_WHITELIST",
-  //   ALPHA_SALE_WHITELIST
-  // );
-  // console.log("[generateMerkleRoots] ADVISORY_WHITELIST\n", ADVISORY_WHITELIST);
-
   // merkle trees
   const whitelistMerkleTree =
     merkleHelper.createMerkleTree(ALPHA_SALE_WHITELIST);
   const advisorMerkleTree = merkleHelper.createMerkleTree(ADVISORY_WHITELIST);
-
-  // console.log(
-  //   "\n[generateMerkleRoots] whitelistMerkleTree",
-  //   whitelistMerkleTree
-  // );
-  // console.log("[generateMerkleRoots] advisorMerkleTree\n", advisorMerkleTree);
 
   // merkle roots
   const whitelistMerkleRoot =
