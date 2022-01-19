@@ -1,5 +1,4 @@
 import { useMerkleHelper } from "../helpers/merkle";
-import { toUnixTimestamp } from "../helpers/time";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -8,12 +7,6 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { testSetup } from "./utils";
 import { DeployContractsFunction, TestSetupArgs } from "./utils/types";
 import MerkleTree from "merkletreejs";
-import {
-  bigNumberToBlockTimestamp,
-  BLOCK_ONE_DAY,
-  BLOCK_ONE_WEEK,
-  getCurrentBlockTimestamp,
-} from "../utils";
 
 describe("Sale", async () => {
   const merkleHelper = useMerkleHelper();
@@ -93,14 +86,21 @@ describe("Sale", async () => {
     whitelistMerkleTree = _whitelistMerkleTree;
     deployContracts = _deployContracts;
 
-    const now = await getCurrentBlockTimestamp();
-    const start = bigNumberToBlockTimestamp(now) + BLOCK_ONE_DAY;
+    const currentTimestamp = (
+      await ethers
+        .getDefaultProvider()
+        .getBlock(await ethers.getDefaultProvider().getBlockNumber())
+    ).timestamp;
 
     // Sale contract deploy
     const { saleContract: _saleContract, wethContract: _wethContract } =
       await deployContracts(
-        BigNumber.from(start),
-        BigNumber.from(start + BLOCK_ONE_WEEK)
+        BigNumber.from(
+          parseInt((currentTimestamp + 1000 + args.offset).toString())
+        ),
+        BigNumber.from(
+          parseInt((currentTimestamp + 1000 + args.offset + 5184000).toString())
+        )
       );
 
     // connect as a minter
@@ -108,114 +108,106 @@ describe("Sale", async () => {
     wethContract = _wethContract;
   };
 
-  beforeEach(async () => {
-    await setup();
+  describe("mintPrice", () => {
+    beforeEach(async () => await setup({ offset: 0 }));
+    // a very basic test, just so we can easily confirm the test setup is working as expected
+    it("SHOULD return 0.2 ether, WHEN called", async () => {
+      const mintPrice = await saleContract.MINT_PRICE();
+
+      // assert
+      expect(ethers.utils.formatEther(mintPrice)).to.be.equal("0.22");
+    });
   });
 
-  // describe("mintPrice", () => {
-  //   beforeEach(async () => await setup({ offset: 0 }));
-  //   // a very basic test, just so we can easily confirm the test setup is working as expected
-  //   it("SHOULD return 0.2 ether, WHEN called", async () => {
-  //     const mintPrice = await saleContract.MINT_PRICE();
+  describe("advisoryMint", () => {
+    before(async () => await setup({ offset: 0 }));
+    it(`SHOULD revert with "Not in the advisory list", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
+      // arrange
+      saleContract = saleContract.connect(advisor);
+      const overrides = {
+        from: advisor.address,
+      };
 
-  //     // assert
-  //     expect(ethers.utils.formatEther(mintPrice)).to.be.equal("0.22");
-  //   });
-  // });
+      // act & assert
+      await expect(
+        saleContract.advisoryMint(invalidMerkleProof(), overrides)
+      ).to.be.revertedWith("Not in the advisory list").and.to.be.reverted;
+    });
 
-  // describe("advisoryMint", () => {
-  //   before(async () => await setup({ offset: 0 }));
-  //   it(`SHOULD revert with "Not in the advisory list", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
-  //     // arrange
-  //     saleContract = saleContract.connect(advisor);
-  //     const overrides = {
-  //       from: advisor.address,
-  //     };
+    it(`SHOULD emit event KeyAdvisorMinted AND NOT revert with "Not in the advisory list", WHEN GIVEN a valid merkle proof AND the sale is still on-going`, async () => {
+      // arrange
+      saleContract = saleContract.connect(advisor);
 
-  //     // act & assert
-  //     await expect(
-  //       saleContract.advisoryMint(invalidMerkleProof(), overrides)
-  //     ).to.be.revertedWith("Not in the advisory list").and.to.be.reverted;
-  //   });
+      // act & assert
+      await expect(
+        saleContract.advisoryMint(validAdvisorProof(advisor.address), {
+          from: advisor.address,
+        })
+      )
+        .to.emit(saleContract, "KeyAdvisorMinted")
+        .and.not.to.be.revertedWith("Not in the advisory list");
+    });
+  });
 
-  //   it(`SHOULD emit event KeyAdvisorMinted AND NOT revert with "Not in the advisory list", WHEN GIVEN a valid merkle proof AND the sale is still on-going`, async () => {
-  //     // arrange
-  //     saleContract = saleContract.connect(advisor);
+  describe("buyKeyFromSale", () => {
+    before(async () => await setup({ offset: 0 }));
 
-  //     // act & assert
-  //     await expect(
-  //       saleContract.advisoryMint(validAdvisorProof(advisor.address), {
-  //         from: advisor.address,
-  //       })
-  //     )
-  //       .to.emit(saleContract, "KeyAdvisorMinted")
-  //       .and.not.to.be.revertedWith("Not in the advisory list");
-  //   });
-  // });
+    it(`SHOULD revert with "Not eligible", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
+      await ethers.provider.send("evm_increaseTime", [1000]);
+      await ethers.provider.send("evm_mine", []);
 
-  // describe("buyKeyFromSale", () => {
-  //   before(async () => await setup({ offset: 0 }));
+      const badMerkleProof: string[] = [];
+      const overrides = {
+        from: minter.address,
+      };
 
-  //   it(`SHOULD revert with "Not eligible", WHEN GIVEN an invalid merkle proof AND the sale is still on-going`, async () => {
-  //     await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_DAY * 3]);
-  //     await ethers.provider.send("evm_mine", []);
+      // act & assert
+      await expect(
+        saleContract.buyKeyFromSale(badMerkleProof, overrides)
+      ).to.be.revertedWith("Not eligible");
+    });
 
-  //     const badMerkleProof: string[] = [];
-  //     const overrides = {
-  //       from: minter.address,
-  //     };
+    it(`SHOULD revert with "ERC20: transfer amount exceeds balance", WHEN GIVEN an invalid mint price AND the sale is still on-going`, async () => {
+      // arrange
+      saleContract = saleContract.connect(minter);
+      const overrides = {
+        from: minter.address,
+      };
 
-  //     // act & assert
-  //     await expect(
-  //       saleContract.buyKeyFromSale(badMerkleProof, overrides)
-  //     ).to.be.revertedWith("Not eligible");
-  //   });
+      // act & assert
+      await expect(
+        saleContract.buyKeyFromSale(validWhitelistProof(), overrides)
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    });
 
-  //   it(`SHOULD revert with "ERC20: transfer amount exceeds balance", WHEN GIVEN an invalid mint price AND the sale is still on-going`, async () => {
-  //     // arrange
-  //     await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_DAY]);
-  //     await ethers.provider.send("evm_mine", []);
-  //     saleContract = saleContract.connect(minter);
-  //     const overrides = {
-  //       from: minter.address,
-  //     };
+    it(`SHOULD NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
+      await wethContract.mint(minter.address, "20000000000000000000000000000");
+      await wethContract
+        .connect(minter)
+        .approve(saleContract.address, validMintPayment);
+      // assert
+      await expect(
+        saleContract.buyKeyFromSale(validWhitelistProof(), {
+          from: minter.address,
+        })
+      ).to.emit(saleContract, "KeyWhitelistMinted").and.to.be.not.reverted;
+    });
 
-  //     // act & assert
-  //     await expect(
-  //       saleContract.buyKeyFromSale(validWhitelistProof(), overrides)
-  //     ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
-  //   });
+    it(`SHOULD revert with "Sale is over", WHEN GIVEN a valid merkle proof AND the sale time range is from the past`, async () => {
+      await ethers.provider.send("evm_increaseTime", [5204000]);
+      await ethers.provider.send("evm_mine", []);
 
-  //   it(`SHOULD NOT revert, WHEN GIVEN a valid merkle proof AND 0.2 ether transaction value AND the sale is still on-going`, async () => {
-  //     await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_DAY * 3]);
-  //     await ethers.provider.send("evm_mine", []);
-  //     await wethContract.mint(minter.address, "20000000000000000000000000000");
-  //     await wethContract
-  //       .connect(minter)
-  //       .approve(saleContract.address, validMintPayment);
-  //     // assert
-  //     await expect(
-  //       saleContract.buyKeyFromSale(validWhitelistProof(), {
-  //         from: minter.address,
-  //       })
-  //     ).to.emit(saleContract, "KeyWhitelistMinted").and.to.be.not.reverted;
-  //   });
+      const proof = validWhitelistProof();
+      const overrides = {
+        from: minter.address,
+      };
 
-  //   it(`SHOULD revert with "Sale is over", WHEN GIVEN a valid merkle proof AND the sale time range is from the past`, async () => {
-  //     await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
-  //     await ethers.provider.send("evm_mine", []);
-
-  //     const proof = validWhitelistProof();
-  //     const overrides = {
-  //       from: minter.address,
-  //     };
-
-  //     // act & assert
-  //     await expect(
-  //       saleContract.buyKeyFromSale(proof, overrides)
-  //     ).to.be.revertedWith("Sale is over");
-  //   });
-  // });
+      // act & assert
+      await expect(
+        saleContract.buyKeyFromSale(proof, overrides)
+      ).to.be.revertedWith("Sale is over");
+    });
+  });
 
   describe("buyKeyPostSale", async () => {
     before(async () => {
@@ -237,7 +229,7 @@ describe("Sale", async () => {
     });
 
     it(`SHOULD NOT revert with "Sale is ongoing", WHEN the sale timeframe is over`, async () => {
-      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
+      await ethers.provider.send("evm_increaseTime", [100000000]);
       await ethers.provider.send("evm_mine", []);
 
       const hash = ethers.utils.solidityKeccak256(["string"], ["2"]);
@@ -259,8 +251,6 @@ describe("Sale", async () => {
 
     it(`SHOULD not revert and hash should work`, async () => {
       // arrange
-      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
-      await ethers.provider.send("evm_mine", []);
 
       const hash = ethers.utils.solidityKeccak256(
         ["address", "string"],
@@ -280,13 +270,11 @@ describe("Sale", async () => {
       };
 
       await expect(saleContract.buyKeyPostSale("3", signature, overrides)).to
-        .not.be.reverted;
+        .not.reverted;
     });
 
     it(`SHOULD revert if nonce already used`, async () => {
       // arrange
-      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
-      await ethers.provider.send("evm_mine", []);
 
       const hash = ethers.utils.solidityKeccak256(
         ["address", "string"],
@@ -320,16 +308,9 @@ describe("Sale", async () => {
 
     it(`SHOULD revert with "ERC721: owner query for nonexistent token", WHEN the sale timeframe is over AND attempts to burn a key that caller doesn't own`, async () => {
       // arrange
-      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 3]);
-      await ethers.provider.send("evm_mine", []);
-      await wethContract.mint(owner.address, "20000000000000000000000000");
-      await wethContract
-        .connect(owner)
-        .approve(saleContract.address, "20000000000000000000000000");
+
       saleContract = saleContract.connect(owner);
-      const now = await getCurrentBlockTimestamp();
-      const keySwappingTimestamp =
-        bigNumberToBlockTimestamp(now) + BLOCK_ONE_WEEK * 4;
+
       const overrides = {
         from: owner.address,
       };
@@ -345,13 +326,6 @@ describe("Sale", async () => {
       await saleContract.buyKeyPostSale("4", signature, {
         ...overrides,
       });
-      await saleContract.setStartKeyToScrollSwapTimestamp(
-        keySwappingTimestamp, // no increment required, since condition is block.timestamp >= currentTimestamp
-        overrides
-      );
-      await ethers.provider.send("evm_increaseTime", [BLOCK_ONE_WEEK * 5]);
-      await ethers.provider.send("evm_mine", []);
-
       // assert
       await expect(
         saleContract.sellKeyForScroll(5, overrides)
@@ -362,14 +336,19 @@ describe("Sale", async () => {
   describe("setStartKeyToScrollSwapTimestamp", () => {
     it(`SHOULD NOT revert, WHEN the owner makes the call`, async () => {
       // arrange
-      const now = await getCurrentBlockTimestamp();
-      const keySwappingTimestamp =
-        bigNumberToBlockTimestamp(now) + BLOCK_ONE_WEEK * 4;
       saleContract = saleContract.connect(owner);
+
+      const currentTimestamp = (
+        await ethers
+          .getDefaultProvider()
+          .getBlock(await ethers.getDefaultProvider().getBlockNumber())
+      ).timestamp;
 
       // act & assert
       await expect(
-        saleContract.setStartKeyToScrollSwapTimestamp(keySwappingTimestamp)
+        saleContract.setStartKeyToScrollSwapTimestamp(
+          currentTimestamp + 1000000000
+        )
       ).to.emit(saleContract, "NewStartKeyToScrollSwapTimestamp").and.to.be.not
         .reverted;
     });
