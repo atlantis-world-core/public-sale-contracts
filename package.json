@@ -7,6 +7,7 @@
   "author": "Atlantis World Core",
   "license": "MIT",
   "scripts": {
+    "prettier": "prettier --write .",
     "test": "yarn workspace hardhat-project test",
     "compile": "yarn workspace hardhat-project compile",
     "deploy": "yarn workspace hardhat-project deploy",
@@ -16,9 +17,13 @@
     "postinstall": "yarn workspace hardhat-project compile",
     "dev": "yarn workspace example dev",
     "build": "yarn workspace example build",
-    "preview": "yarn workspace example preview"
+    "preview": "yarn workspace example preview",
+    "prepare": "husky install"
   },
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  }
 }
