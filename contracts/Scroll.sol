@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "./@eip2981/ERC2981ContractWideRoyalties.sol";
 import "./interface/IScroll.sol";
 import "./lib/impl/RoyaltiesV2Impl.sol";
 import "./lib/LibPart.sol";
@@ -21,7 +22,8 @@ contract ScrollContract is
   AccessControlUpgradeable,
   OwnableUpgradeable,
   RoyaltiesV2Impl,
-  ReentrancyGuardUpgradeable
+  ReentrancyGuardUpgradeable,
+  ERC2981ContractWideRoyalties
 {
   bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
 
@@ -41,8 +43,16 @@ contract ScrollContract is
   function initialize(address _saleContract) public initializer {
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
     _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
-    __ERC721_init("Scroll", "SCR");
+    __ERC721_init("Atlantis World: Founding Atlantean Scrolls", "AWFAS");
     __Ownable_init();
+    _setRoyalties(msg.sender, 10000);
+  }
+
+  /**
+   * @param amount The amount of royalties to be set.
+   */
+  function setRoyalties(uint256 amount) external onlyOwner {
+    _setRoyalties(msg.sender, amount);
   }
 
   /**
@@ -103,7 +113,7 @@ contract ScrollContract is
     public
     view
     virtual
-    override(ERC721EnumerableUpgradeable, AccessControlUpgradeable)
+    override(ERC721EnumerableUpgradeable, AccessControlUpgradeable, ERC2981Base)
     returns (bool)
   {
     if (_interfaceId == LibRoyaltiesV2._INTERFACE_ID_ROYALTIES) {

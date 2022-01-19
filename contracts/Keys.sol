@@ -5,11 +5,17 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "./@eip2981/ERC2981ContractWideRoyalties.sol";
 
 /// @title Keys Contract, for managing the behaviour of ERC721 keys
 /// @author Rachit Anand Srivastava, Carlo Miguel Dy
 /// @notice Contract is used for tracking the keys claimed. These are non transferable erc721 contracts.
-contract Keys is ERC721Enumerable, AccessControl, Ownable {
+contract Keys is
+  ERC721Enumerable,
+  AccessControl,
+  Ownable,
+  ERC2981ContractWideRoyalties
+{
   using Address for address;
   using Strings for uint256;
 
@@ -44,11 +50,19 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
    * @notice Sets the MINT and BURN role for the sale contract
    */
   constructor(address _saleContract)
-    ERC721("Keys", "Key")
+    ERC721("Atlantis World: Magical Keys", "AWMK")
     notAddressZero(_saleContract)
   {
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
     _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
+    _setRoyalties(msg.sender, 10000);
+  }
+
+  /**
+   * @param amount The amount of royalties to be set.
+   */
+  function setRoyalties(uint256 amount) external onlyOwner {
+    _setRoyalties(msg.sender, amount);
   }
 
   /**
@@ -57,7 +71,7 @@ contract Keys is ERC721Enumerable, AccessControl, Ownable {
   function supportsInterface(bytes4 _interfaceId)
     public
     view
-    override(ERC721Enumerable, AccessControl)
+    override(ERC721Enumerable, AccessControl, ERC2981Base)
     returns (bool)
   {
     return
