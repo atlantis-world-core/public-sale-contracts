@@ -11,9 +11,12 @@ import ALPHA_SALE_WHITELIST from "../helpers/alpha-sale-whitelist.json";
 
 dotenv.config();
 
-// Just toggle this to `true` when it's finally ready for Polygon Mainnet
-const polygonMainnetReady = true;
-const networkName = polygonMainnetReady ? "Mainnet" : "Mumbai Testnet";
+const isNetworkPolygonMainnet =
+  hre.network.name === "polygon" || hre.network.config.chainId === 137;
+// Just toggle this to `false` Polygon Testnet Mumbai
+const polygonMainnetReady = false || isNetworkPolygonMainnet;
+const networkName =
+  polygonMainnetReady || isNetworkPolygonMainnet ? "Mainnet" : "Mumbai Testnet";
 const WETH_ADDRESS = "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
 
 async function main() {
