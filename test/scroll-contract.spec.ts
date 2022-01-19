@@ -50,23 +50,23 @@ describe("ScrollContract", () => {
     expect(deployerAddress).to.be.eq(ownerAddress);
   });
 
-  it(`setRoyalties: SHOULD revert with "Ownable: caller is not the owner", WHEN the caller is NOT the owner/deployer of the contract`, async () => {
+  it(`setRaribleRoyalties: SHOULD revert with "Ownable: caller is not the owner", WHEN the caller is NOT the owner/deployer of the contract`, async () => {
     scrollContract = scrollContract.connect(royalty);
     await expect(
-      scrollContract.setRoyalties(
+      scrollContract.setRaribleRoyalties(
         BigNumber.from(1),
         royalty.address,
         BigNumber.from(50)
       )
     ).to.be.revertedWith("Ownable: caller is not the owner");
   });
-  it(`setRoyalties: SHOULD NOT revert, WHEN the caller is the owner/deployer of the contract`, async () => {
+  it(`setRaribleRoyalties: SHOULD NOT revert, WHEN the caller is the owner/deployer of the contract`, async () => {
     // TODO: Make this test pass, currently a failing test
     scrollContract = scrollContract.connect(owner);
     const scrollContractOwner = await scrollContract.owner();
     expect(scrollContractOwner).to.be.equal(owner.address);
     await expect(
-      scrollContract.setRoyalties(
+      scrollContract.setRaribleRoyalties(
         BigNumber.from(1),
         royalty.address,
         BigNumber.from(50),
