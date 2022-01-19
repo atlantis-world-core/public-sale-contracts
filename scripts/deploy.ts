@@ -1,30 +1,35 @@
 import hre, { ethers, upgrades } from "hardhat";
 import * as dotenv from "dotenv";
+import readline from "readline";
 import { useMerkleHelper } from "../helpers/merkle";
-import { toUnixTimestamp } from "../helpers/time";
-import { BigNumber } from "ethers";
+import {
+  JAN_22_END_SALE_TIMESTAMP,
+  JAN_22_START_SALE_TIMESTAMP,
+} from "../utils";
 
 dotenv.config();
 
-async function main() {
-  if (
-    !process.env.START_SALE_BLOCK_TIMESTAMP ||
-    !process.env.STOP_SALE_BLOCK_TIMESTAMP
-  ) {
-    console.error(
-      "MISSING_ENV_VALUE: The START_SALE_BLOCK_TIMESTAMP and STOP_SALE_BLOCK_TIMESTAMP is not specified"
-    );
-    process.exit(1);
-  }
+// Just toggle this to `true` when it's finally ready for Polygon Mainnet
+const polygonMainnetReady = false;
+const network = polygonMainnetReady ? "Mainnet" : "Mumbai Testnet";
+const WETH_ADDRESS = "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
 
-  if (!process.env.OWNER || !process.env.WETH) {
+async function main() {
+  console.log(`✨ Polygon ${network} deployment initializing...\n\n\n`);
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  if (!process.env.OWNER) {
     console.error("MISSING_ENV_VALUE: No OWNER found in `.env` file");
     process.exit(1);
   }
 
   const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
 
-  console.log("\n\n\nDeploying Sale Contract 📜...\n");
+  console.log("Deploying Sale Contract 📜...\n");
 
   const {
     name,
@@ -44,24 +49,97 @@ async function main() {
       .getBlock(await ethers.getDefaultProvider().getBlockNumber())
   ).timestamp;
 
+  const START_SALE_TIMESTAMP = polygonMainnetReady
+    ? JAN_22_START_SALE_TIMESTAMP
+    : currentTimestamp + 100000;
+  const END_SALE_TIMESTAMP = polygonMainnetReady
+    ? JAN_22_END_SALE_TIMESTAMP
+    : currentTimestamp + 100000 + 5184000;
+
+  const startSaleTimestampDateFormat = new Date(START_SALE_TIMESTAMP * 1000);
+  const endSaleTimestampDateFormat = new Date(END_SALE_TIMESTAMP * 1000);
+
+  // verify deployer address
+  const question1 = () => {
+    return new Promise<boolean>((resolve, reject) => {
+      rl.question(
+        `The deployer is "${deployer.address}", do you want to proceed?: (y/n) `,
+        (answer) => {
+          if (answer.toLowerCase() === "y") {
+            return resolve(true);
+          }
+
+          return reject(false);
+        }
+      );
+    });
+  };
+
+  // verify deployer's balance
+  const question2 = () => {
+    return new Promise<boolean>((resolve, reject) => {
+      rl.question(
+        `The deployer's balance is "${deployerBalance}", do you want to proceed?: (y/n) `,
+        (answer) => {
+          if (answer.toLowerCase() === "y") {
+            return resolve(true);
+          }
+
+          return reject(false);
+        }
+      );
+    });
+  };
+
+  // verify timestamp
+  const question3 = () => {
+    return new Promise<boolean>((resolve, reject) => {
+      rl.question(
+        `The starting sale timestamp is "${START_SALE_TIMESTAMP} (${startSaleTimestampDateFormat})" and ending sale timestamp is "${END_SALE_TIMESTAMP} (${endSaleTimestampDateFormat})", do you want to proceed?: (y/n) `,
+        (answer) => {
+          if (answer.toLowerCase() === "y") {
+            return resolve(true);
+          }
+
+          return reject(false);
+        }
+      );
+    });
+  };
+
+  const response1 = await question1();
+  if (!response1) {
+    return process.exit(1);
+  }
+
+  const response2 = await question2();
+  if (!response2) {
+    return process.exit(1);
+  }
+
+  const response3 = await question3();
+  if (!response3) {
+    return process.exit(1);
+  }
+
   // Sale contract
   const SaleContract = await ethers.getContractFactory("Sale");
   console.log(
     "SaleContract Argument...",
     whitelistMerkleRoot,
     advisorMerkleRoot,
-    BigNumber.from(parseInt((currentTimestamp + 100000).toString())),
-    BigNumber.from(parseInt((currentTimestamp + 100000 + 5184000).toString())),
+    START_SALE_TIMESTAMP,
+    END_SALE_TIMESTAMP,
     process.env.OWNER,
-    process.env.WETH
+    WETH_ADDRESS
   );
   const saleContract = await SaleContract.deploy(
     whitelistMerkleRoot,
     advisorMerkleRoot,
-    BigNumber.from(parseInt((currentTimestamp + 100000).toString())),
-    BigNumber.from(parseInt((currentTimestamp + 100000 + 5184000).toString())),
+    START_SALE_TIMESTAMP,
+    END_SALE_TIMESTAMP,
     process.env.OWNER,
-    process.env.WETH
+    WETH_ADDRESS
   );
   console.info(
     `\n[SaleContract] txHash: "${saleContract.deployTransaction.hash}"`
@@ -121,14 +199,19 @@ async function main() {
 function generateMerkleRoots() {
   const merkleHelper = useMerkleHelper();
 
+  // TODO: To be replaced with a JSON file reference
   const WHITELISTED_USERS = (process.env.WHITELISTED_USERS ?? "")
     .split(",")
-    .map((key) => key.trim());
+    .map((key) => key.trim())
+    .filter((leaf) => leaf);
+
+  // TODO: To be replaced with a JSON file reference
   const ADVISOR_WHITELISTED_USERS = (
     process.env.ADVISOR_WHITELISTED_USERS ?? ""
   )
     .split(",")
-    .map((key) => key.trim());
+    .map((key) => key.trim())
+    .filter((leaf) => leaf);
 
   // checks if both arrays are empty, throw exception to stop smart contract deployment
   if (
