@@ -143,11 +143,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   event NewScrollAddress(address indexed scroll);
 
-  /**
-   * @notice Emits an event when a timestamp for key swapping for scroll has been set
-   */
-  event NewStartKeyToScrollSwapTimestamp(uint256 indexed timestamp);
-
   /// @notice When a new whitelist merkle root is set
   event NewWhitelistMerkleRootSet(uint256 indexed timestamp);
 
@@ -355,21 +350,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   // *************
   // SET FUNCTIONS
   // *************
-
-  /**
-   * @notice It sets the timestamp for when key swapping for scrolls is available
-   * @dev I noticed that the property `startKeyToScrollSwapTimestamp` was never set anywhere else
-   */
-  function setStartKeyToScrollSwapTimestamp(uint256 _timestamp)
-    external
-    onlyOwner
-  {
-    require(_timestamp >= block.timestamp, "Invalid timestamp");
-
-    startKeyToScrollSwapTimestamp = _timestamp;
-
-    emit NewStartKeyToScrollSwapTimestamp(_timestamp);
-  }
 
   /**
    * @notice Sets a new merkle root for all whitelisted addresses
