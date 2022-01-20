@@ -58,10 +58,10 @@ async function main() {
 
   const START_SALE_TIMESTAMP = polygonMainnetReady
     ? JAN_22_START_SALE_TIMESTAMP
-    : 1642670293;
+    : 1642671913;
   const END_SALE_TIMESTAMP = polygonMainnetReady
     ? JAN_22_END_SALE_TIMESTAMP
-    : START_SALE_TIMESTAMP + (BLOCK_ONE_HOUR * 3);
+    : START_SALE_TIMESTAMP + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR;
 
   const startSaleTimestampDateFormat = new Date(START_SALE_TIMESTAMP * 1000);
   const endSaleTimestampDateFormat = new Date(END_SALE_TIMESTAMP * 1000);
