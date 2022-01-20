@@ -3,6 +3,8 @@ import * as dotenv from "dotenv";
 import readline from "readline";
 import { useMerkleHelper } from "../helpers/merkle";
 import {
+  BLOCK_ONE_HOUR,
+  BLOCK_ONE_MINUTE,
   JAN_22_END_SALE_TIMESTAMP,
   JAN_22_START_SALE_TIMESTAMP,
 } from "../utils";
@@ -56,10 +58,10 @@ async function main() {
 
   const START_SALE_TIMESTAMP = polygonMainnetReady
     ? JAN_22_START_SALE_TIMESTAMP
-    : currentTimestamp + 100000;
+    : 1642670293;
   const END_SALE_TIMESTAMP = polygonMainnetReady
     ? JAN_22_END_SALE_TIMESTAMP
-    : currentTimestamp + 100000 + 5184000;
+    : START_SALE_TIMESTAMP + (BLOCK_ONE_HOUR * 3);
 
   const startSaleTimestampDateFormat = new Date(START_SALE_TIMESTAMP * 1000);
   const endSaleTimestampDateFormat = new Date(END_SALE_TIMESTAMP * 1000);
