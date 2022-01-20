@@ -168,6 +168,7 @@ async function main() {
 
   // Scroll proxy contract
   const ScrollProxyContract = await ethers.getContractFactory("ScrollContract");
+  const scrollContractImplementation = await ScrollProxyContract.deploy();
   const scrollContract = await upgrades.deployProxy(
     ScrollProxyContract,
     [saleContract.address],
@@ -183,7 +184,7 @@ async function main() {
     `[ScrollProxyContract] expected address: "${scrollContract.address}"`
   );
   console.info(
-    `[ScrollProxyContract] 💡 Scroll proxy contract deployed at address "${scrollContract.address}"\n`
+    `[ScrollProxyContract] 💡 Scroll proxy contract deployed at address "${scrollContract.address}", scroll contract imlpementation address "${scrollContractImplementation.address}"\n`
   );
 
   const [saleContractOwner, keyContractOwner, scrollContractOwner] =
@@ -203,7 +204,7 @@ async function main() {
   console.log("\n\n\nVerify the smart contracts with the suggested commands:", [
     `npx hardhat verify --network ${network} ${saleContract.address} ${whitelistMerkleRoot} ${advisorMerkleRoot} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${process.env.OWNER} ${WETH_ADDRESS}`,
     `npx hardhat verify --network ${network} ${keyContract.address} ${saleContract.address}`,
-    `npx hardhat verify --network ${network} ${scrollContract.address} ${saleContract.address}`,
+    `npx hardhat verify --network ${network} ${scrollContractImplementation.address}`,
   ]);
 
   return process.exit(0);
