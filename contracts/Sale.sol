@@ -449,13 +449,13 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     require(msg.sender == targetAddress, "Not the assigned address.");
     require(
       targetAddress != address(0),
-      "The targetAddress is an empty address."
+      "The assigned address is an empty address."
     );
 
     WETH.transferFrom(
       address(this),
       targetAddress,
-      publicKeyMintCount * MINT_PRICE
+      WETH.balanceOf(address(this))
     );
   }
 }
