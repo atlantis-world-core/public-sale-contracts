@@ -216,7 +216,7 @@ async function main() {
   console.log(
     "\n\n\nVerify the smart contracts with the suggested commands:",
     commands,
-    commands.join("&&")
+    commands.join(" &&")
   );
 
   return process.exit(0);
