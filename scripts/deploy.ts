@@ -15,7 +15,7 @@ dotenv.config();
 
 const isNetworkPolygonMainnet =
   hre.network.name === "polygon" || hre.network.config.chainId === 137;
-  
+
 // Just toggle this to `false` Polygon Testnet Mumbai
 const polygonMainnetReady = false || isNetworkPolygonMainnet;
 const networkName =
@@ -28,7 +28,7 @@ const WETH_ADDRESS = polygonMainnetReady
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
-  : 1642675837;
+  : 1642678837;
 const END_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_END_SALE_TIMESTAMP
   : START_SALE_TIMESTAMP + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR;
@@ -208,11 +208,16 @@ async function main() {
   });
 
   const network = polygonMainnetReady ? "polygon" : "mumbai";
-  console.log("\n\n\nVerify the smart contracts with the suggested commands:", [
+  const commands = [
     `npx hardhat verify --network ${network} ${saleContract.address} ${whitelistMerkleRoot} ${advisorMerkleRoot} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${process.env.OWNER} ${WETH_ADDRESS}`,
     `npx hardhat verify --network ${network} ${keyContract.address} ${saleContract.address}`,
     `npx hardhat verify --network ${network} ${scrollContractImplementation.address}`,
-  ]);
+  ];
+  console.log(
+    "\n\n\nVerify the smart contracts with the suggested commands:",
+    commands,
+    commands.join("&&")
+  );
 
   return process.exit(0);
 }
