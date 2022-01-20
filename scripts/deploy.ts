@@ -24,7 +24,7 @@ const networkName =
 // WETH address
 const WETH_ADDRESS = polygonMainnetReady
   ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
-  : "0xa6fa4fb5f76172d178d61b04b0ecd319c5d1c0aa"; // https://mumbai.polygonscan.com/token/0xa6fa4fb5f76172d178d61b04b0ecd319c5d1c0aa
+  : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
