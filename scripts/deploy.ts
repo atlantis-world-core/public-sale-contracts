@@ -15,11 +15,23 @@ dotenv.config();
 
 const isNetworkPolygonMainnet =
   hre.network.name === "polygon" || hre.network.config.chainId === 137;
+  
 // Just toggle this to `false` Polygon Testnet Mumbai
 const polygonMainnetReady = false || isNetworkPolygonMainnet;
 const networkName =
   polygonMainnetReady || isNetworkPolygonMainnet ? "Mainnet" : "Mumbai Testnet";
-const WETH_ADDRESS = "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
+
+// WETH address
+const WETH_ADDRESS = polygonMainnetReady
+  ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
+  : "0xa6fa4fb5f76172d178d61b04b0ecd319c5d1c0aa"; // https://mumbai.polygonscan.com/token/0xa6fa4fb5f76172d178d61b04b0ecd319c5d1c0aa
+
+const START_SALE_TIMESTAMP = polygonMainnetReady
+  ? JAN_22_START_SALE_TIMESTAMP
+  : 1642675837;
+const END_SALE_TIMESTAMP = polygonMainnetReady
+  ? JAN_22_END_SALE_TIMESTAMP
+  : START_SALE_TIMESTAMP + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR;
 
 async function main() {
   console.log(`✨ Polygon ${networkName} deployment initializing...\n\n\n`);
@@ -55,13 +67,6 @@ async function main() {
       .getDefaultProvider()
       .getBlock(await ethers.getDefaultProvider().getBlockNumber())
   ).timestamp;
-
-  const START_SALE_TIMESTAMP = polygonMainnetReady
-    ? JAN_22_START_SALE_TIMESTAMP
-    : 1642671913;
-  const END_SALE_TIMESTAMP = polygonMainnetReady
-    ? JAN_22_END_SALE_TIMESTAMP
-    : START_SALE_TIMESTAMP + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR;
 
   const startSaleTimestampDateFormat = new Date(START_SALE_TIMESTAMP * 1000);
   const endSaleTimestampDateFormat = new Date(END_SALE_TIMESTAMP * 1000);
