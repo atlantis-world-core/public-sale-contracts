@@ -161,11 +161,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * @notice Validates if the current block timestamp is still under the sale timestamp range
    */
   modifier isSaleOnGoing() {
-    require(
-      block.timestamp >= startSaleBlockTimestamp,
-      "Sale has not started yet"
-    );
-    require(block.timestamp <= stopSaleBlockTimestamp, "Sale is over");
+    require(saleStarted(), "Sale has not started yet");
+    require(saleEnded(), "Sale is over");
     _;
   }
 
@@ -175,6 +172,20 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   modifier hasSaleEnded() {
     require(block.timestamp > stopSaleBlockTimestamp, "Sale is ongoing");
     _;
+  }
+
+  /**
+   * @dev Lookup function to check if the Alpha Sale started.
+   */
+  function saleStarted() public view returns (bool) {
+    return block.timestamp >= startSaleBlockTimestamp;
+  }
+
+  /**
+   * @dev Lookup function to check if the Alpha Sale ended.
+   */
+  function saleEnded() public view returns (bool) {
+    return block.timestamp <= stopSaleBlockTimestamp;
   }
 
   /**
