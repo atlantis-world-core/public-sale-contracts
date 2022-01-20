@@ -11,6 +11,10 @@ export const BLOCK_ONE_WEEK = 604800000;
 export const BLOCK_ONE_MONTH = 2678400000;
 export const BLOCK_ONE_YEAR = 31536000000;
 
+export const JAN_22_START_SALE_TIMESTAMP =
+  new Date(Date.UTC(2022, 0, 22, 20, 22)).getTime() / 1000;
+export const JAN_22_END_SALE_TIMESTAMP = JAN_22_START_SALE_TIMESTAMP + 86400;
+
 export async function getCurrentBlockTimestamp(): Promise<number> {
   const blockNumber = await ethers.provider.getBlockNumber();
   const [block] = await Promise.all([ethers.provider.getBlock(blockNumber)]);

@@ -333,36 +333,36 @@ describe("Sale", async () => {
     });
   });
 
-  describe("setStartKeyToScrollSwapTimestamp", () => {
-    it(`SHOULD NOT revert, WHEN the owner makes the call`, async () => {
-      // arrange
-      saleContract = saleContract.connect(owner);
+  // describe("setStartKeyToScrollSwapTimestamp", () => {
+  //   it(`SHOULD NOT revert, WHEN the owner makes the call`, async () => {
+  //     // arrange
+  //     saleContract = saleContract.connect(owner);
 
-      const currentTimestamp = (
-        await ethers
-          .getDefaultProvider()
-          .getBlock(await ethers.getDefaultProvider().getBlockNumber())
-      ).timestamp;
+  //     const currentTimestamp = (
+  //       await ethers
+  //         .getDefaultProvider()
+  //         .getBlock(await ethers.getDefaultProvider().getBlockNumber())
+  //     ).timestamp;
 
-      // act & assert
-      await expect(
-        saleContract.setStartKeyToScrollSwapTimestamp(
-          currentTimestamp + 1000000000
-        )
-      ).to.emit(saleContract, "NewStartKeyToScrollSwapTimestamp").and.to.be.not
-        .reverted;
-    });
+  //     // act & assert
+  //     await expect(
+  //       saleContract.setStartKeyToScrollSwapTimestamp(
+  //         currentTimestamp + 1000000000
+  //       )
+  //     ).to.emit(saleContract, "NewStartKeyToScrollSwapTimestamp").and.to.be.not
+  //       .reverted;
+  //   });
 
-    it(`SHOULD revert with "Ownable: caller is not the owner", WHEN it's NOT the owner that makes the call`, async () => {
-      // arrange
-      saleContract = saleContract.connect(advisor);
+  //   it(`SHOULD revert with "Ownable: caller is not the owner", WHEN it's NOT the owner that makes the call`, async () => {
+  //     // arrange
+  //     saleContract = saleContract.connect(advisor);
 
-      // act & assert
-      await expect(
-        saleContract.setStartKeyToScrollSwapTimestamp(startSaleBlockTimestamp)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-    });
-  });
+  //     // act & assert
+  //     await expect(
+  //       saleContract.setStartKeyToScrollSwapTimestamp(startSaleBlockTimestamp)
+  //     ).to.be.revertedWith("Ownable: caller is not the owner");
+  //   });
+  // });
 
   describe("setWhitelistMerkleRoot", () => {
     it(`SHOULD NOT revert, WHEN the owner makes the call`, async () => {

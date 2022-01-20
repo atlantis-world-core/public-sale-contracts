@@ -14,7 +14,6 @@ import {IScroll} from "./interface/IScroll.sol";
 /// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
 /// @author Rachit Anand Srivastava, Carlo Miguel Dy
 /// @dev All function calls are implemented with side effects on the key and scroll contracts
-
 contract Sale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice Key contracts
@@ -75,6 +74,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
   /// @notice to keep track of used nonces during the public sale
   mapping(string => bool) private _usedNonces;
+
+  /// @dev Keeps track of the mint count for the minter address
+  mapping(address => uint256) private _addressToMintCount;
 
   /**
    * @notice The timestamp for when swapping keys for a scroll begins
@@ -141,11 +143,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    */
   event NewScrollAddress(address indexed scroll);
 
-  /**
-   * @notice Emits an event when a timestamp for key swapping for scroll has been set
-   */
-  event NewStartKeyToScrollSwapTimestamp(uint256 indexed timestamp);
-
   /// @notice When a new whitelist merkle root is set
   event NewWhitelistMerkleRootSet(uint256 indexed timestamp);
 
@@ -164,11 +161,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * @notice Validates if the current block timestamp is still under the sale timestamp range
    */
   modifier isSaleOnGoing() {
-    require(
-      block.timestamp >= startSaleBlockTimestamp,
-      "Sale has not started yet"
-    );
-    require(block.timestamp <= stopSaleBlockTimestamp, "Sale is over");
+    require(saleStarted(), "Sale has not started yet");
+    require(saleEnded(), "Sale is over");
     _;
   }
 
@@ -181,6 +175,59 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   }
 
   /**
+   * @dev Lookup function to check if the Alpha Sale started.
+   */
+  function saleStarted() public view returns (bool) {
+    return block.timestamp >= startSaleBlockTimestamp;
+  }
+
+  /**
+   * @dev Lookup function to check if the Alpha Sale ended.
+   */
+  function saleEnded() public view returns (bool) {
+    return block.timestamp <= stopSaleBlockTimestamp;
+  }
+
+  /**
+   * @dev Gets the current mint count of an address.
+   * @param minter The minter's address
+   */
+  function getAddressMintCount(address minter) external view returns (uint256) {
+    return _addressToMintCount[minter];
+  }
+
+  /**
+   * @dev Checks if the sender is whitelisted
+   */
+  function isAlphaSaleWhitelist(bytes32[] calldata _proof)
+    public
+    view
+    returns (bool)
+  {
+    return MerkleProof.verify(_proof, whitelistMerkleRoot, _leaf(msg.sender));
+  }
+
+  /**
+   * @dev Checks if the sender is whitelisted
+   */
+  function isAdvisoryWhitelist(bytes32[] calldata _proof)
+    public
+    view
+    returns (bool)
+  {
+    return MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender));
+  }
+
+  /// @notice compares the recovered signer address using the hash to the public address of the signing key
+  function matchAddressSigner(bytes32 hash, bytes memory signature)
+    public
+    view
+    returns (bool)
+  {
+    return ECDSA.recover(hash, signature) == (publicVerificationAddress);
+  }
+
+  /**
    * @notice Mints key, and sends them to the calling user if they are in the Advisory Whitelist
    * @param _proof Merkle proof for the advisory list merkle root
    */
@@ -189,10 +236,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     whenNotPaused
     nonReentrant
   {
-    require(
-      MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender)),
-      "Not in the advisory list"
-    );
+    require(isAdvisoryWhitelist(_proof), "Not in the advisory list");
     require(!_advisoryClaimedStatus[msg.sender], "Already claimed");
     require(
       advisoryKeyLimitCount < ADVISORY_KEY_LIMIT,
@@ -201,6 +245,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
     advisoryKeyLimitCount++;
     _advisoryClaimedStatus[msg.sender] = true;
+    _addressToMintCount[msg.sender]++;
 
     _keysContract.mintKeyToUser(msg.sender);
 
@@ -216,10 +261,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     nonReentrant
     isSaleOnGoing
   {
-    require(
-      MerkleProof.verify(_proof, whitelistMerkleRoot, _leaf(msg.sender)),
-      "Not eligible"
-    );
+    require(isAlphaSaleWhitelist(_proof), "Not eligible");
     require(!_publicSaleClaimedStatus[msg.sender], "Already claimed");
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "All minted");
     require(
@@ -229,30 +271,11 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
     publicKeyMintCount++;
     _publicSaleClaimedStatus[msg.sender] = true;
+    _addressToMintCount[msg.sender]++;
 
     _keysContract.mintKeyToUser(msg.sender);
 
     emit KeyWhitelistMinted(msg.sender);
-  }
-
-  /// @notice to generate the hash using the nonce and the msg.sender
-  function hashTransaction(address sender, string memory nonce)
-    private
-    pure
-    returns (bytes32)
-  {
-    bytes32 hash = keccak256(abi.encodePacked(sender, nonce));
-
-    return ECDSA.toEthSignedMessageHash(hash);
-  }
-
-  /// @notice compares the recovered signer address using the hash to the public address of the signing key
-  function matchAddressSigner(bytes32 hash, bytes memory signature)
-    public
-    view
-    returns (bool)
-  {
-    return ECDSA.recover(hash, signature) == (publicVerificationAddress);
   }
 
   /**
@@ -267,12 +290,11 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     whenNotPaused
   {
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "Mint limit reached");
-
     require(
       matchAddressSigner(hashTransaction(msg.sender, nonce), signature),
       "Signature Verification Failed"
     );
-
+    require(_addressToMintCount[msg.sender] <= 3, "You can only mint 3 times.");
     require(!_usedNonces[nonce], "Hash Already Used");
     require(
       WETH.transferFrom(msg.sender, address(this), MINT_PRICE),
@@ -280,8 +302,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     );
 
     _usedNonces[nonce] = true;
-
     publicKeyMintCount++;
+    _addressToMintCount[msg.sender]++;
 
     _keysContract.mintKeyToUser(msg.sender);
 
@@ -298,7 +320,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   {
     _keysContract.burnKeyOfUser(_tokenId, msg.sender);
 
-    _scrollContract.mint(msg.sender, _tokenId);
+    bool isAdvisoryMinter = _advisoryClaimedStatus[msg.sender];
+
+    _scrollContract.mint(msg.sender, isAdvisoryMinter);
 
     emit KeySwapped(msg.sender, _tokenId);
   }
@@ -323,24 +347,20 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     advisoryKeyLimitCount = ADVISORY_KEY_LIMIT;
   }
 
+  /// @notice to generate the hash using the nonce and the msg.sender
+  function hashTransaction(address sender, string memory nonce)
+    private
+    pure
+    returns (bytes32)
+  {
+    bytes32 hash = keccak256(abi.encodePacked(sender, nonce));
+
+    return ECDSA.toEthSignedMessageHash(hash);
+  }
+
   // *************
   // SET FUNCTIONS
   // *************
-
-  /**
-   * @notice It sets the timestamp for when key swapping for scrolls is available
-   * @dev I noticed that the property `startKeyToScrollSwapTimestamp` was never set anywhere else
-   */
-  function setStartKeyToScrollSwapTimestamp(uint256 _timestamp)
-    external
-    onlyOwner
-  {
-    require(_timestamp >= block.timestamp, "Invalid timestamp");
-
-    startKeyToScrollSwapTimestamp = _timestamp;
-
-    emit NewStartKeyToScrollSwapTimestamp(_timestamp);
-  }
 
   /**
    * @notice Sets a new merkle root for all whitelisted addresses
@@ -406,17 +426,27 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     return keccak256(abi.encodePacked(_sender));
   }
 
-  function approveWithdrawelAddress(address _targetAddress) external onlyOwner {
+  /**
+   * @dev Set the address to where funds gets transferred into.
+   */
+  function setWithdrawalAddress(address _targetAddress) external onlyOwner {
     targetAddress = _targetAddress;
   }
 
+  /**
+   * @dev Withdraws the amount of funds received to the `targetAddress`
+   */
   function withdraw() external onlyOwner {
-    require(msg.sender == targetAddress, "Not the assigned address");
+    require(msg.sender == targetAddress, "Not the assigned address.");
+    require(
+      targetAddress != address(0),
+      "The assigned address is an empty address."
+    );
 
     WETH.transferFrom(
       address(this),
       targetAddress,
-      publicKeyMintCount * MINT_PRICE
+      WETH.balanceOf(address(this))
     );
   }
 }
