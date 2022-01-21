@@ -2,7 +2,6 @@ import hre, { ethers, upgrades } from "hardhat";
 import * as dotenv from "dotenv";
 import readline from "readline";
 import {
-  BLOCK_ONE_HOUR,
   JAN_22_END_SALE_TIMESTAMP,
   JAN_22_START_SALE_TIMESTAMP,
 } from "../utils";
@@ -29,11 +28,11 @@ const FOUNDING_ATLANTEAN_SCROLL_CID =
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
-  : 1642757105;
+  : 1642759505;
 
 const END_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_END_SALE_TIMESTAMP
-  : 1642758305;
+  : 1642759805;
 
 const ADVISORY_WHITELIST_MERKLE_ROOT =
   "0x3d5becc2a6bf1326a88d5be55b68d41b6a036c4c02b656866c763129ac5b6639";
@@ -54,19 +53,18 @@ async function main() {
     process.exit(1);
   }
 
-  const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
   const [deployer] = await ethers.getSigners();
 
-  let WETH_ADDRESS = process.env.WETH; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
+  // let WETH_ADDRESS = process.env.WETH; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
 
-  if (!WETH_ADDRESS) {
-    const wethContract = await ethers.getContractFactory("MockWETH");
-    const wethContractDeploy = await wethContract.deploy();
-    WETH_ADDRESS = wethContractDeploy.address;
-    wethContractDeploy
-      .connect(deployer)
-      .mint(deployer.address, "200000000000000000000000000000");
-  }
+  // if (!WETH_ADDRESS) {
+  //   const wethContract = await ethers.getContractFactory("MockWETH");
+  //   const wethContractDeploy = await wethContract.deploy();
+  //   WETH_ADDRESS = wethContractDeploy.address;
+  //   wethContractDeploy
+  //     .connect(deployer)
+  //     .mint(deployer.address, "200000000000000000000000000000");
+  // }
   console.log("Deploying Sale Contract 📜...\n");
 
   const {
@@ -153,7 +151,7 @@ async function main() {
     `_advisorMerkleRoot: ${ADVISORY_WHITELIST_MERKLE_ROOT}`,
     `_startSaleBlockTimestamp: ${START_SALE_TIMESTAMP}`,
     `_stopSaleBlockTimestamp: ${END_SALE_TIMESTAMP}`,
-    `_publicVerification: ${process.env.OWNER}`,
+    `_publicVerification: ${deployer.address}`,
     `_WETH: ${WETH_ADDRESS}`,
   ]);
   const saleContract = await SaleContract.deploy(
@@ -161,7 +159,7 @@ async function main() {
     ADVISORY_WHITELIST_MERKLE_ROOT,
     START_SALE_TIMESTAMP,
     END_SALE_TIMESTAMP,
-    process.env.OWNER,
+    deployer.address,
     WETH_ADDRESS
   );
   console.info(
@@ -223,7 +221,7 @@ async function main() {
 
   const network = polygonMainnetReady ? "polygon" : "mumbai";
   const commands = [
-    `npx hardhat verify --network ${network} ${saleContract.address} ${ALPHA_SALE_WHITELIST_MERKLE_ROOT} ${ADVISORY_WHITELIST_MERKLE_ROOT} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${process.env.OWNER} ${WETH_ADDRESS}`,
+    `npx hardhat verify --network ${network} ${saleContract.address} ${ALPHA_SALE_WHITELIST_MERKLE_ROOT} ${ADVISORY_WHITELIST_MERKLE_ROOT} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${deployer.address} ${WETH_ADDRESS}`,
     `npx hardhat verify --network ${network} ${keyContract.address} ${saleContract.address}`,
     `npx hardhat verify --network ${network} ${scrollContractImplementation.address}`,
   ];
