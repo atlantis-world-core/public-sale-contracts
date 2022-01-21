@@ -1,53 +1,13 @@
 import hre, { ethers, upgrades } from "hardhat";
 import * as dotenv from "dotenv";
 import readline from "readline";
-import { useMerkleHelper } from "../helpers/merkle";
 import {
   BLOCK_ONE_HOUR,
-  BLOCK_ONE_MINUTE,
   JAN_22_END_SALE_TIMESTAMP,
   JAN_22_START_SALE_TIMESTAMP,
 } from "../utils";
-import ADVISORY_WHITELIST from "../helpers/advisory-whitelist.json";
-import ALPHA_SALE_WHITELIST from "../helpers/alpha-sale-whitelist.json";
 
 dotenv.config();
-
-function generateMerkleRoots() {
-  const merkleHelper = useMerkleHelper();
-
-  // checks if both arrays are empty, throw exception to stop smart contract deployment
-  if (ALPHA_SALE_WHITELIST.length === 0 || ADVISORY_WHITELIST.length === 0) {
-    console.error(
-      "EMPTY_LEAVES: Either the whitelist leaves or the advisory leaves is empty."
-    );
-    process.exit(1);
-  }
-
-  // merkle trees
-  const whitelistMerkleTree =
-    merkleHelper.createMerkleTree(ALPHA_SALE_WHITELIST);
-  const advisorMerkleTree = merkleHelper.createMerkleTree(ADVISORY_WHITELIST);
-
-  // merkle roots
-  const whitelistMerkleRoot =
-    merkleHelper.createMerkleRoot(whitelistMerkleTree);
-  const advisorMerkleRoot = merkleHelper.createMerkleRoot(advisorMerkleTree);
-
-  console.log(
-    "Merkle root generated for Alpha Sale whitelist\n",
-    whitelistMerkleRoot
-  );
-  console.log(
-    "Merkle root generated for advisory whitelist\n\n",
-    advisorMerkleRoot
-  );
-
-  return {
-    whitelistMerkleRoot,
-    advisorMerkleRoot,
-  };
-}
 
 const isNetworkPolygonMainnet =
   hre.network.name === "polygon" || hre.network.config.chainId === 137;
@@ -65,7 +25,7 @@ const WETH_ADDRESS = "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1";
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
-  : 1642729985;
+  : 1642736405;
 const END_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_END_SALE_TIMESTAMP
   : START_SALE_TIMESTAMP + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR;
@@ -83,7 +43,11 @@ async function main() {
     process.exit(1);
   }
 
-  const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
+  // const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
+  const advisorMerkleRoot =
+    "0x4783b32b5d55afc875ce045e238637c2ef32025d47e8b582133e474998157151";
+  const whitelistMerkleRoot =
+    "0x0f8ecfb96f4abd69fad26adc4c589af6be2f48f436f7b6935f03853c0445eed9";
 
   console.log("Deploying Sale Contract 📜...\n");
 
@@ -98,12 +62,6 @@ async function main() {
   const deployerBalance =
     parseInt((await deployer.getBalance()).toString()) / 1e18;
   console.log(`Deployer Balance: "${deployerBalance.toFixed(2)}"`);
-
-  const currentTimestamp = (
-    await ethers
-      .getDefaultProvider()
-      .getBlock(await ethers.getDefaultProvider().getBlockNumber())
-  ).timestamp;
 
   const startSaleTimestampDateFormat = new Date(START_SALE_TIMESTAMP * 1000);
   const endSaleTimestampDateFormat = new Date(END_SALE_TIMESTAMP * 1000);
@@ -173,13 +131,13 @@ async function main() {
 
   // Sale contract
   const SaleContract = await ethers.getContractFactory("Sale");
-  console.log("SaleContract Argument...", [
-    `whitelistMerkleRoot=${whitelistMerkleRoot}`,
-    `advisorMerkleRoot=${advisorMerkleRoot}`,
-    `START_SALE_TIMESTAMP=${START_SALE_TIMESTAMP}`,
-    `END_SALE_TIMESTAMP=${END_SALE_TIMESTAMP}`,
-    `process.env.OWNER=${process.env.OWNER}`,
-    `WETH_ADDRESS=${WETH_ADDRESS}`,
+  console.log("SaleContract constructor arguments...", [
+    `_whitelistMerkleRoot: ${whitelistMerkleRoot}`,
+    `_advisorMerkleRoot: ${advisorMerkleRoot}`,
+    `_startSaleBlockTimestamp: ${START_SALE_TIMESTAMP}`,
+    `_stopSaleBlockTimestamp: ${END_SALE_TIMESTAMP}`,
+    `_publicVerification: ${process.env.OWNER}`,
+    `_WETH: ${WETH_ADDRESS}`,
   ]);
   const saleContract = await SaleContract.deploy(
     whitelistMerkleRoot,

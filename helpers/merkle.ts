@@ -1,6 +1,6 @@
 // import { ADVISOR_WHITELISTED_USERS, WHITELISTED_USERS } from "./whitelist";
 import { MerkleTree } from "merkletreejs";
-import { ethers } from "hardhat";
+import { ethers } from "ethers";
 import keccak256 from "keccak256";
 
 export const useMerkleHelper = () => {
