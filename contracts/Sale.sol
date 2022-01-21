@@ -383,6 +383,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       i++
     ) _keysContract.mintKeyToUser(_treasuryAddress);
 
+    _advisoryAddressToClaimed[_treasuryAddress] = true;
     publicKeyMintCount = PUBLIC_KEY_LIMIT;
     advisoryKeyLimitCount = ADVISORY_KEY_LIMIT;
   }
