@@ -18,17 +18,23 @@ const networkName =
   polygonMainnetReady || isNetworkPolygonMainnet ? "Mainnet" : "Mumbai Testnet";
 
 // WETH address
-// const WETH_ADDRESS = polygonMainnetReady
-//   ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
-//   : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
-const WETH_ADDRESS = "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1";
+const WETH_ADDRESS = polygonMainnetReady
+  ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
+  : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
-  : 1642743785;
+  : 1642750505;
+  
 const END_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_END_SALE_TIMESTAMP
   : START_SALE_TIMESTAMP + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR;
+
+const ADVISORY_WHITELIST_MERKLE_ROOT =
+  "0x092d14a4d64827e723ff81de64e939f49e5d657a82e9ca74e24b1cc014832dbe";
+  
+const ALPHA_SALE_WHITELIST_MERKLE_ROOT =
+  "0x5172fbf9d7e2f2f4f4c9ac850ffbfbd5152f8ab895fb18676af2d040ca4dcec5";
 
 async function main() {
   console.log(`✨ Polygon ${networkName} deployment initializing...\n\n\n`);
@@ -42,12 +48,6 @@ async function main() {
     console.error("MISSING_ENV_VALUE: No OWNER found in `.env` file");
     process.exit(1);
   }
-
-  // const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
-  const advisorMerkleRoot =
-    "0xe80c3fc1d3dfe73a6602056ab3c22878541d170ff3dc91274bf0819cc2dd8130";
-  const whitelistMerkleRoot =
-    "0x4f386cdd5c8ce9b3ab4b3f9d61f8209198edd2f6fd1b73fa8c7223d956e650fd";
 
   console.log("Deploying Sale Contract 📜...\n");
 
@@ -132,16 +132,16 @@ async function main() {
   // Sale contract
   const SaleContract = await ethers.getContractFactory("Sale");
   console.log("SaleContract constructor arguments...", [
-    `_whitelistMerkleRoot: ${whitelistMerkleRoot}`,
-    `_advisorMerkleRoot: ${advisorMerkleRoot}`,
+    `_whitelistMerkleRoot: ${ALPHA_SALE_WHITELIST_MERKLE_ROOT}`,
+    `_advisorMerkleRoot: ${ADVISORY_WHITELIST_MERKLE_ROOT}`,
     `_startSaleBlockTimestamp: ${START_SALE_TIMESTAMP}`,
     `_stopSaleBlockTimestamp: ${END_SALE_TIMESTAMP}`,
     `_publicVerification: ${process.env.OWNER}`,
     `_WETH: ${WETH_ADDRESS}`,
   ]);
   const saleContract = await SaleContract.deploy(
-    whitelistMerkleRoot,
-    advisorMerkleRoot,
+    ALPHA_SALE_WHITELIST_MERKLE_ROOT,
+    ADVISORY_WHITELIST_MERKLE_ROOT,
     START_SALE_TIMESTAMP,
     END_SALE_TIMESTAMP,
     process.env.OWNER,
@@ -205,7 +205,7 @@ async function main() {
 
   const network = polygonMainnetReady ? "polygon" : "mumbai";
   const commands = [
-    `npx hardhat verify --network ${network} ${saleContract.address} ${whitelistMerkleRoot} ${advisorMerkleRoot} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${process.env.OWNER} ${WETH_ADDRESS}`,
+    `npx hardhat verify --network ${network} ${saleContract.address} ${ALPHA_SALE_WHITELIST_MERKLE_ROOT} ${ADVISORY_WHITELIST_MERKLE_ROOT} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${process.env.OWNER} ${WETH_ADDRESS}`,
     `npx hardhat verify --network ${network} ${keyContract.address} ${saleContract.address}`,
     `npx hardhat verify --network ${network} ${scrollContractImplementation.address}`,
   ];

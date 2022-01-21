@@ -1,3 +1,7 @@
+export * from "./generate";
+export * from "./merkle";
+export * from "./time";
+
 import * as fs from "fs";
 
 export function generateArray(length: number) {

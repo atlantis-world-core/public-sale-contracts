@@ -13,6 +13,7 @@ import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import { generateMerkleRoots } from "./helpers/generate";
 
 dotenv.config();
 
@@ -27,23 +28,15 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 });
 
 task(
-  "generate:merkle",
+  "generate:root",
   "Generate merkle roots for alpha sale whitelist and advisory whitelist",
   async (args, hre) => {
-    const merkle = useMerkleHelper();
+    const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
 
-    const advisoryTree = merkle.createMerkleTree(
-      ADVISORY_LEAVES.map((leaf) => getAddress(leaf)).sort()
-    );
-    const advisoryRoot = merkle.createMerkleRoot(advisoryTree);
+    console.log("\n\n\n");
 
-    const alphaSaleTree = merkle.createMerkleTree(
-      ALPHA_SALE_LEAVES.map((leaf) => getAddress(leaf)).sort()
-    );
-    const alphaSaleRoot = merkle.createMerkleRoot(alphaSaleTree);
-
-    console.log("advisoryRoot", advisoryRoot);
-    console.log("alphaSaleRoot", alphaSaleRoot);
+    console.log("✨ advisorMerkleRoot", advisorMerkleRoot);
+    console.log("✨ whitelistMerkleRoot", whitelistMerkleRoot);
   }
 );
 
