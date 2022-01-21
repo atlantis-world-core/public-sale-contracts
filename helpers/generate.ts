@@ -2,11 +2,14 @@ import { useMerkleHelper } from "../helpers/merkle";
 
 import ADVISORY_WHITELIST from "../helpers/advisory-whitelist.json";
 import ADVISORY_PLACEHOLDER from "../helpers/512-advisory-placeholder.json";
-import ALPHA_SALE_WHITELIST from "../helpers/alpha-sale-whitelist.json";
-import ALPHA_SALE_PLACEHOLDER from "../helpers/alpha-sale-whitelist.json";
-import { ethers } from "ethers";
 
-export function generateMerkleRoots() {
+import ALPHA_SALE_WHITELIST from "../helpers/alpha-sale-whitelist.json";
+import ALPHA_SALE_PLACEHOLDER from "../helpers/16384-advisory-placeholder.json";
+
+import { ethers } from "ethers";
+import { exportJson } from ".";
+
+export async function generateMerkleRoots() {
   const merkleHelper = useMerkleHelper();
 
   const advisories = ADVISORY_PLACEHOLDER;
@@ -34,24 +37,26 @@ export function generateMerkleRoots() {
   }
 
   // merkle trees
-  const advisoryTree = merkleHelper.createMerkleTree(advisoryWhitelist);
-  const alphaSaleWhitelistTree =
-    merkleHelper.createMerkleTree(alphaSaleWhitelist);
+  const advisoryTree = merkleHelper.createMerkleTree(advisories);
+  const alphaSaleWhitelistTree = merkleHelper.createMerkleTree(whitelisters);
 
   // merkle roots
+  const advisoryMerkleRoot = merkleHelper.createMerkleRoot(advisoryTree);
   const alphaSaleWhitelistMerkleRoot = merkleHelper.createMerkleRoot(
     alphaSaleWhitelistTree
   );
-  const advisoryMerkleRoot = merkleHelper.createMerkleRoot(advisoryTree);
 
-  console.log(
-    "Merkle root generated for advisory whitelist\n\n",
-    advisoryMerkleRoot
-  );
-  console.log(
-    "Merkle root generated for Alpha Sale whitelist\n",
-    alphaSaleWhitelistMerkleRoot
-  );
+  console.log("advisoryMerkleRoot", advisoryMerkleRoot);
+  console.log("alphaSaleWhitelistMerkleRoot", alphaSaleWhitelistMerkleRoot);
+
+  await exportJson("advisory-whitelist-output.json", {
+    root: advisoryMerkleRoot,
+    leaves: advisories,
+  });
+  await exportJson("alpha-sale-whitelist-output.json", {
+    root: alphaSaleWhitelistMerkleRoot,
+    leaves: whitelisters,
+  });
 
   return {
     whitelistMerkleRoot: alphaSaleWhitelistMerkleRoot,

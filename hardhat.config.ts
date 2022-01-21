@@ -31,7 +31,8 @@ task(
   "generate:root",
   "Generate merkle roots for alpha sale whitelist and advisory whitelist",
   async (args, hre) => {
-    const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
+    const { advisorMerkleRoot, whitelistMerkleRoot } =
+      await generateMerkleRoots();
 
     console.log("\n\n\n");
 

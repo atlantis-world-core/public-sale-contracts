@@ -15,9 +15,7 @@ export function unqiueArray(array: any[]) {
 export async function exportJson(fileName: string, data: object) {
   // console.log("🗄️ Exporting data into JSON file...", data);
 
-  fs.writeFile(fileName, JSON.stringify(data), "utf-8", (error) => {
-    console.error(error);
-  });
+  fs.writeFileSync(fileName, JSON.stringify(data), "utf-8");
 
   console.log("✅ Data export done!");
 }
