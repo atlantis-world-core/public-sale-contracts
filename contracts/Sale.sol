@@ -421,6 +421,16 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   }
 
   /**
+   * @dev Set a new value for public verification address
+   */
+  function setPublicVerificationAddress(address _publicVerificationAddress)
+    external
+    onlyOwner
+  {
+    publicVerificationAddress = _publicVerificationAddress;
+  }
+
+  /**
    * @param _address Key contract address
    */
   function setKeysAddress(address _address)
