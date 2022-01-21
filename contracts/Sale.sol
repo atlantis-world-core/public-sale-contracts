@@ -395,6 +395,10 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     emit NewScrollAddress(_address);
   }
 
+  function setWETHAddress(address _address) external onlyOwner {
+    WETH = IERC20(_address);
+  }
+
   // ***************
   // PAUSE FUNCTIONS
   // ***************
