@@ -22,13 +22,14 @@ const networkName =
   polygonMainnetReady || isNetworkPolygonMainnet ? "Mainnet" : "Mumbai Testnet";
 
 // WETH address
-const WETH_ADDRESS = polygonMainnetReady
-  ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
-  : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
+// const WETH_ADDRESS = polygonMainnetReady
+//   ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
+//   : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
+const WETH_ADDRESS = "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1";
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
-  : 1642678837;
+  : 1642722605;
 const END_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_END_SALE_TIMESTAMP
   : START_SALE_TIMESTAMP + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR;
@@ -216,7 +217,7 @@ async function main() {
   console.log(
     "\n\n\nVerify the smart contracts with the suggested commands:",
     commands,
-    commands.join(" &&")
+    commands.join(" && ")
   );
 
   return process.exit(0);
