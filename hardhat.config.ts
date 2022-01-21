@@ -47,6 +47,27 @@ task(
   }
 );
 
+task("generate:proof", "Generate a merkle proof for a leaf with a merkle root")
+  .addParam("address", "The leaf node")
+  .setAction(async ({ address }, hre) => {
+    const merkle = useMerkleHelper();
+
+    const advisoryTree = merkle.createMerkleTree(
+      ADVISORY_LEAVES.map((leaf) => getAddress(leaf)).sort()
+    );
+    const advisoryRoot = merkle.createMerkleRoot(advisoryTree);
+    const advisoryProof = merkle.createMerkleProof(advisoryTree, address);
+
+    const alphaSaleTree = merkle.createMerkleTree(
+      ALPHA_SALE_LEAVES.map((leaf) => getAddress(leaf)).sort()
+    );
+    const alphaSaleRoot = merkle.createMerkleRoot(alphaSaleTree);
+    const alphaSaleProof = merkle.createMerkleProof(alphaSaleTree, address);
+
+    console.log("advisoryProof", advisoryProof, advisoryProof.toString());
+    console.log("alphaSaleProof", alphaSaleProof, alphaSaleProof.toString());
+  });
+
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 const config: HardhatUserConfig = {
