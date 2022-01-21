@@ -69,8 +69,8 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   address private targetAddress;
 
   /// @notice to keep track if the advisor / user whitelisted has already claimed the NFT
-  mapping(address => bool) private _publicSaleClaimedStatus;
-  mapping(address => bool) private _advisoryClaimedStatus;
+  mapping(address => bool) private _publicSaleWhitelisterToClaimed;
+  mapping(address => bool) private _advisoryAddressToClaimed;
 
   /// @notice to keep track of used nonces during the public sale
   mapping(string => bool) private _usedNonces;
@@ -202,6 +202,35 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   }
 
   /**
+   * @dev Checks if the advisory address have already claimed.
+   */
+  function advisoryAddressToClaimed(address _address)
+    external
+    view
+    returns (bool)
+  {
+    return _advisoryAddressToClaimed[_address];
+  }
+
+  /**
+   * @dev Checks if the alpha sale whitelister address have already claimed.
+   */
+  function publicSaleWhitelisterToClaimed(address _address)
+    external
+    view
+    returns (bool)
+  {
+    return _publicSaleWhitelisterToClaimed[_address];
+  }
+
+  /**
+   * @dev Checks if the given address have already claimed 3 times.
+   */
+  function addressToMaxClaimed(address _address) external view returns (bool) {
+    return _addressToMintCount[_address] == uint256(3);
+  }
+
+  /**
    * @dev Checks if the sender is whitelisted
    */
   function isAlphaSaleWhitelist(bytes32[] calldata _proof)
@@ -245,14 +274,14 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender)),
       "Not in the advisory list"
     );
-    require(!_advisoryClaimedStatus[msg.sender], "Already claimed");
+    require(!_advisoryAddressToClaimed[msg.sender], "Already claimed");
     require(
       advisoryKeyLimitCount < ADVISORY_KEY_LIMIT,
       "Advisory mint limit reached"
     );
 
     advisoryKeyLimitCount++;
-    _advisoryClaimedStatus[msg.sender] = true;
+    _advisoryAddressToClaimed[msg.sender] = true;
     _addressToMintCount[msg.sender]++;
 
     _keysContract.mintKeyToUser(msg.sender);
@@ -273,7 +302,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       MerkleProof.verify(_proof, whitelistMerkleRoot, _leaf(msg.sender)),
       "Not eligible"
     );
-    require(!_publicSaleClaimedStatus[msg.sender], "Already claimed");
+    require(!_publicSaleWhitelisterToClaimed[msg.sender], "Already claimed");
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "All minted");
     require(
       WETH.transferFrom(msg.sender, address(this), MINT_PRICE),
@@ -281,7 +310,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     );
 
     publicKeyMintCount++;
-    _publicSaleClaimedStatus[msg.sender] = true;
+    _publicSaleWhitelisterToClaimed[msg.sender] = true;
     _addressToMintCount[msg.sender]++;
 
     _keysContract.mintKeyToUser(msg.sender);
@@ -331,7 +360,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   {
     _keysContract.burnKeyOfUser(_tokenId, msg.sender);
 
-    bool isAdvisoryMinter = _advisoryClaimedStatus[msg.sender];
+    bool isAdvisoryMinter = _advisoryAddressToClaimed[msg.sender];
 
     _scrollContract.mint(msg.sender, isAdvisoryMinter);
 
@@ -389,6 +418,16 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     advisorMerkleRoot = _merkleRoot;
 
     emit NewAdvisoryMerkleRootSet(block.timestamp);
+  }
+
+  /**
+   * @dev Set a new value for public verification address
+   */
+  function setPublicVerificationAddress(address _publicVerificationAddress)
+    external
+    onlyOwner
+  {
+    publicVerificationAddress = _publicVerificationAddress;
   }
 
   /**
