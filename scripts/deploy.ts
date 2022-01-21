@@ -31,10 +31,10 @@ const END_SALE_TIMESTAMP = polygonMainnetReady
   : START_SALE_TIMESTAMP + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR;
 
 const ADVISORY_WHITELIST_MERKLE_ROOT =
-  "0x092d14a4d64827e723ff81de64e939f49e5d657a82e9ca74e24b1cc014832dbe";
+  "0x913df80730bc26e74eded04cb141f82c4c6dc9c9214c549be05bb69e7b8c1cbe";
   
 const ALPHA_SALE_WHITELIST_MERKLE_ROOT =
-  "0x5172fbf9d7e2f2f4f4c9ac850ffbfbd5152f8ab895fb18676af2d040ca4dcec5";
+  "0xbe147275fb37b6d9e840d5d555ffb82b8064d420f18414dfe9486db7e79e3e6a";
 
 async function main() {
   console.log(`✨ Polygon ${networkName} deployment initializing...\n\n\n`);

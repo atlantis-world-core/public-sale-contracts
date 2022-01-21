@@ -4,8 +4,8 @@ import { HardhatUserConfig, task } from "hardhat/config";
 import { useMerkleHelper } from "./helpers/merkle";
 import { getAddress } from "ethers/lib/utils";
 
-import ALPHA_SALE_LEAVES from "./helpers/alpha-sale-whitelist.json";
-import ADVISORY_LEAVES from "./helpers/advisory-whitelist.json";
+import ADVISORY_MERKLE from "./helpers/advisory-whitelist-output.json";
+import ALPHA_SALE_MERKLE from "./helpers/alpha-sale-whitelist-output.json";
 
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-etherscan";
@@ -47,19 +47,21 @@ task("generate:proof", "Generate a merkle proof for a leaf with a merkle root")
     const merkle = useMerkleHelper();
 
     const advisoryTree = merkle.createMerkleTree(
-      ADVISORY_LEAVES.map((leaf) => getAddress(leaf)).sort()
+      ADVISORY_MERKLE.leaves.map((leaf) => getAddress(leaf)).sort()
     );
     const advisoryRoot = merkle.createMerkleRoot(advisoryTree);
     const advisoryProof = merkle.createMerkleProof(advisoryTree, address);
 
     const alphaSaleTree = merkle.createMerkleTree(
-      ALPHA_SALE_LEAVES.map((leaf) => getAddress(leaf)).sort()
+      ALPHA_SALE_MERKLE.leaves.map((leaf) => getAddress(leaf)).sort()
     );
     const alphaSaleRoot = merkle.createMerkleRoot(alphaSaleTree);
     const alphaSaleProof = merkle.createMerkleProof(alphaSaleTree, address);
 
-    console.log("advisoryProof", advisoryProof, advisoryProof.toString());
-    console.log("alphaSaleProof", alphaSaleProof, alphaSaleProof.toString());
+    console.log("✨ advisoryRoot", advisoryRoot);
+    console.log("✨ alphaSaleRoot", alphaSaleRoot);
+    console.log("✨ advisoryProof", advisoryProof, advisoryProof.toString());
+    console.log("✨ alphaSaleProof", alphaSaleProof, alphaSaleProof.toString());
   });
 
 // You need to export an object to set up your config
