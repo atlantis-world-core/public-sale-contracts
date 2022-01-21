@@ -84,36 +84,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   uint256 public startKeyToScrollSwapTimestamp;
 
   /**
-   * @param _whitelistMerkleRoot The merkle root of whitelisted candidates
-   * @param _advisorMerkleRoot The merkle root of advisor addresses
-   * @param _startSaleBlockTimestamp The start sale timestamp
-   * @param _stopSaleBlockTimestamp The stop sale timestamp
-   */
-  constructor(
-    bytes32 _whitelistMerkleRoot,
-    bytes32 _advisorMerkleRoot,
-    uint256 _startSaleBlockTimestamp,
-    uint256 _stopSaleBlockTimestamp,
-    address _publicVerification,
-    IERC20 _WETH
-  ) {
-    require(_startSaleBlockTimestamp >= block.timestamp, "Invalid start date");
-    require(
-      _stopSaleBlockTimestamp >= block.timestamp &&
-        _stopSaleBlockTimestamp > _startSaleBlockTimestamp,
-      "Invalid stop date"
-    );
-
-    publicVerificationAddress = _publicVerification;
-    whitelistMerkleRoot = _whitelistMerkleRoot;
-    advisorMerkleRoot = _advisorMerkleRoot;
-
-    startSaleBlockTimestamp = _startSaleBlockTimestamp;
-    stopSaleBlockTimestamp = _stopSaleBlockTimestamp;
-    WETH = _WETH;
-  }
-
-  /**
    * @notice Emits an event when an advisor have minted
    */
   event KeyAdvisorMinted(address indexed sender);
@@ -148,6 +118,36 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
   /// @notice When a new advisory merkle root is set
   event NewAdvisoryMerkleRootSet(uint256 indexed timestamp);
+
+  /**
+   * @param _whitelistMerkleRoot The merkle root of whitelisted candidates
+   * @param _advisorMerkleRoot The merkle root of advisor addresses
+   * @param _startSaleBlockTimestamp The start sale timestamp
+   * @param _stopSaleBlockTimestamp The stop sale timestamp
+   */
+  constructor(
+    bytes32 _whitelistMerkleRoot,
+    bytes32 _advisorMerkleRoot,
+    uint256 _startSaleBlockTimestamp,
+    uint256 _stopSaleBlockTimestamp,
+    address _publicVerification,
+    IERC20 _WETH
+  ) {
+    require(_startSaleBlockTimestamp >= block.timestamp, "Invalid start date");
+    require(
+      _stopSaleBlockTimestamp >= block.timestamp &&
+        _stopSaleBlockTimestamp > _startSaleBlockTimestamp,
+      "Invalid stop date"
+    );
+
+    publicVerificationAddress = _publicVerification;
+    whitelistMerkleRoot = _whitelistMerkleRoot;
+    advisorMerkleRoot = _advisorMerkleRoot;
+
+    startSaleBlockTimestamp = _startSaleBlockTimestamp;
+    stopSaleBlockTimestamp = _stopSaleBlockTimestamp;
+    WETH = _WETH;
+  }
 
   /**
    * @notice Validates if the given address is not an empty address
