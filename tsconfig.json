@@ -6,16 +6,20 @@
     "esModuleInterop": true,
     "outDir": "dist",
     "declaration": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "rootDirs": ["./src", "./scripts", "./test"]
   },
+
+  "exclude": ["dist", "node_modules"],
   "include": [
     "./scripts",
     "./test",
     "./typechain",
     "./helpers",
-    "./utils"
+    "./utils",
+    "./src"
   ],
-  "files": [
-    "./hardhat.config.ts"
-  ]
+  "files": ["./hardhat.config.ts"]
 }

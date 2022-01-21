@@ -201,28 +201,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     return _addressToMintCount[minter];
   }
 
-  /**
-   * @dev Checks if the sender is whitelisted
-   */
-  function isAlphaSaleWhitelist(bytes32[] calldata _proof)
-    public
-    view
-    returns (bool)
-  {
-    return MerkleProof.verify(_proof, whitelistMerkleRoot, _leaf(msg.sender));
-  }
-
-  /**
-   * @dev Checks if the sender is whitelisted
-   */
-  function isAdvisoryWhitelist(bytes32[] calldata _proof)
-    public
-    view
-    returns (bool)
-  {
-    return MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender));
-  }
-
   /// @notice compares the recovered signer address using the hash to the public address of the signing key
   function matchAddressSigner(bytes32 hash, bytes memory signature)
     public
@@ -241,7 +219,10 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     whenNotPaused
     nonReentrant
   {
-    require(isAdvisoryWhitelist(_proof), "Not in the advisory list");
+    require(
+      MerkleProof.verify(_proof, advisorMerkleRoot, _leaf(msg.sender)),
+      "Not in the advisory list"
+    );
     require(!_advisoryClaimedStatus[msg.sender], "Already claimed");
     require(
       advisoryKeyLimitCount < ADVISORY_KEY_LIMIT,
@@ -266,7 +247,10 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     nonReentrant
     isSaleOnGoing
   {
-    require(isAlphaSaleWhitelist(_proof), "Not eligible");
+    require(
+      MerkleProof.verify(_proof, whitelistMerkleRoot, _leaf(msg.sender)),
+      "Not eligible"
+    );
     require(!_publicSaleClaimedStatus[msg.sender], "Already claimed");
     require(publicKeyMintCount < PUBLIC_KEY_LIMIT, "All minted");
     require(
