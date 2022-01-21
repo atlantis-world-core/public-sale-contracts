@@ -1,6 +1,12 @@
 import * as dotenv from "dotenv";
 
 import { HardhatUserConfig, task } from "hardhat/config";
+import { useMerkleHelper } from "./helpers/merkle";
+import { getAddress } from "ethers/lib/utils";
+
+import ALPHA_SALE_LEAVES from "./helpers/alpha-sale-whitelist.json";
+import ADVISORY_LEAVES from "./helpers/advisory-whitelist.json";
+
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
@@ -19,6 +25,27 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
     console.log(account.address);
   }
 });
+
+task(
+  "generate:merkle",
+  "Generate merkle roots for alpha sale whitelist and advisory whitelist",
+  async (args, hre) => {
+    const merkle = useMerkleHelper();
+
+    const advisoryTree = merkle.createMerkleTree(
+      ADVISORY_LEAVES.map((leaf) => getAddress(leaf)).sort()
+    );
+    const advisoryRoot = merkle.createMerkleRoot(advisoryTree);
+
+    const alphaSaleTree = merkle.createMerkleTree(
+      ALPHA_SALE_LEAVES.map((leaf) => getAddress(leaf)).sort()
+    );
+    const alphaSaleRoot = merkle.createMerkleRoot(alphaSaleTree);
+
+    console.log("advisoryRoot", advisoryRoot);
+    console.log("alphaSaleRoot", alphaSaleRoot);
+  }
+);
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
