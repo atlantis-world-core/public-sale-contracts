@@ -25,7 +25,7 @@ const WETH_ADDRESS = "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1";
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
-  : 1642736405;
+  : 1642743785;
 const END_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_END_SALE_TIMESTAMP
   : START_SALE_TIMESTAMP + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR;
@@ -45,9 +45,9 @@ async function main() {
 
   // const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
   const advisorMerkleRoot =
-    "0x4783b32b5d55afc875ce045e238637c2ef32025d47e8b582133e474998157151";
+    "0xe80c3fc1d3dfe73a6602056ab3c22878541d170ff3dc91274bf0819cc2dd8130";
   const whitelistMerkleRoot =
-    "0x0f8ecfb96f4abd69fad26adc4c589af6be2f48f436f7b6935f03853c0445eed9";
+    "0x4f386cdd5c8ce9b3ab4b3f9d61f8209198edd2f6fd1b73fa8c7223d956e650fd";
 
   console.log("Deploying Sale Contract 📜...\n");
 
@@ -164,6 +164,7 @@ async function main() {
   );
   console.info(`[KeyContract] expected address: "${keyContract.address}"`);
   await keyContract.deployed();
+  await saleContract.setKeysAddress(keyContract.address);
   console.info(
     `[KeyContract] 💡 Key contract deployed at address "${keyContract.address}"\n`
   );
