@@ -22,19 +22,24 @@ const WETH_ADDRESS = polygonMainnetReady
   ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
   : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
 
+const MAGICAL_KEY_CID =
+  "bafybeieqybu57sr3alxl6n7rrge3yfwzqwv4pghmirm35aedclt7poav7y";
+const FOUNDING_ATLANTEAN_SCROLL_CID =
+  "bafybeievwhkikv5xny6u7fvonbmhzrh6rpqystkcd4bfwgvbh7cbesxawy";
+
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
-  : 1642750505;
-  
+  : 1642757105;
+
 const END_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_END_SALE_TIMESTAMP
-  : START_SALE_TIMESTAMP + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR + BLOCK_ONE_HOUR;
+  : 1642758305;
 
 const ADVISORY_WHITELIST_MERKLE_ROOT =
-  "0x913df80730bc26e74eded04cb141f82c4c6dc9c9214c549be05bb69e7b8c1cbe";
-  
+  "0x3d5becc2a6bf1326a88d5be55b68d41b6a036c4c02b656866c763129ac5b6639";
+
 const ALPHA_SALE_WHITELIST_MERKLE_ROOT =
-  "0xbe147275fb37b6d9e840d5d555ffb82b8064d420f18414dfe9486db7e79e3e6a";
+  "0x28204831c19eca66608b3167f6bc35872730b74e14d21feab8833883b522ac34";
 
 async function main() {
   console.log(`✨ Polygon ${networkName} deployment initializing...\n\n\n`);
@@ -165,6 +170,7 @@ async function main() {
   console.info(`[KeyContract] expected address: "${keyContract.address}"`);
   await keyContract.deployed();
   await saleContract.setKeysAddress(keyContract.address);
+  keyContract.setMagicalKeyTokenURI(MAGICAL_KEY_CID);
   console.info(
     `[KeyContract] 💡 Key contract deployed at address "${keyContract.address}"\n`
   );
