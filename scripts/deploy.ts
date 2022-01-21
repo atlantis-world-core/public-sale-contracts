@@ -1,59 +1,45 @@
 import hre, { ethers, upgrades } from "hardhat";
 import * as dotenv from "dotenv";
 import readline from "readline";
-import { useMerkleHelper } from "../helpers/merkle";
 import {
+  BLOCK_ONE_HOUR,
   JAN_22_END_SALE_TIMESTAMP,
   JAN_22_START_SALE_TIMESTAMP,
 } from "../utils";
-import ADVISORY_WHITELIST from "../helpers/advisory-whitelist.json";
-import ALPHA_SALE_WHITELIST from "../helpers/alpha-sale-whitelist.json";
 
 dotenv.config();
 
-function generateMerkleRoots() {
-  const merkleHelper = useMerkleHelper();
-
-  // checks if both arrays are empty, throw exception to stop smart contract deployment
-  if (ALPHA_SALE_WHITELIST.length === 0 || ADVISORY_WHITELIST.length === 0) {
-    console.error(
-      "EMPTY_LEAVES: Either the whitelist leaves or the advisory leaves is empty."
-    );
-    process.exit(1);
-  }
-
-  // merkle trees
-  const whitelistMerkleTree =
-    merkleHelper.createMerkleTree(ALPHA_SALE_WHITELIST);
-  const advisorMerkleTree = merkleHelper.createMerkleTree(ADVISORY_WHITELIST);
-
-  // merkle roots
-  const whitelistMerkleRoot =
-    merkleHelper.createMerkleRoot(whitelistMerkleTree);
-  const advisorMerkleRoot = merkleHelper.createMerkleRoot(advisorMerkleTree);
-
-  console.log(
-    "Merkle root generated for Alpha Sale whitelist\n",
-    whitelistMerkleRoot
-  );
-  console.log(
-    "Merkle root generated for advisory whitelist\n\n",
-    advisorMerkleRoot
-  );
-
-  return {
-    whitelistMerkleRoot,
-    advisorMerkleRoot,
-  };
-}
-
 const isNetworkPolygonMainnet =
   hre.network.name === "polygon" || hre.network.config.chainId === 137;
+
 // Just toggle this to `false` Polygon Testnet Mumbai
 const polygonMainnetReady = false || isNetworkPolygonMainnet;
 const networkName =
   polygonMainnetReady || isNetworkPolygonMainnet ? "Mainnet" : "Mumbai Testnet";
-const WETH_ADDRESS = "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
+
+// WETH address
+const WETH_ADDRESS = polygonMainnetReady
+  ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
+  : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
+
+const MAGICAL_KEY_CID =
+  "bafybeieqybu57sr3alxl6n7rrge3yfwzqwv4pghmirm35aedclt7poav7y";
+const FOUNDING_ATLANTEAN_SCROLL_CID =
+  "bafybeievwhkikv5xny6u7fvonbmhzrh6rpqystkcd4bfwgvbh7cbesxawy";
+
+const START_SALE_TIMESTAMP = polygonMainnetReady
+  ? JAN_22_START_SALE_TIMESTAMP
+  : 1642757105;
+
+const END_SALE_TIMESTAMP = polygonMainnetReady
+  ? JAN_22_END_SALE_TIMESTAMP
+  : 1642758305;
+
+const ADVISORY_WHITELIST_MERKLE_ROOT =
+  "0x3d5becc2a6bf1326a88d5be55b68d41b6a036c4c02b656866c763129ac5b6639";
+
+const ALPHA_SALE_WHITELIST_MERKLE_ROOT =
+  "0x28204831c19eca66608b3167f6bc35872730b74e14d21feab8833883b522ac34";
 
 async function main() {
   console.log(`✨ Polygon ${networkName} deployment initializing...\n\n\n`);
@@ -68,8 +54,6 @@ async function main() {
     process.exit(1);
   }
 
-  const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
-
   console.log("Deploying Sale Contract 📜...\n");
 
   const {
@@ -83,19 +67,6 @@ async function main() {
   const deployerBalance =
     parseInt((await deployer.getBalance()).toString()) / 1e18;
   console.log(`Deployer Balance: "${deployerBalance.toFixed(2)}"`);
-
-  const currentTimestamp = (
-    await ethers
-      .getDefaultProvider()
-      .getBlock(await ethers.getDefaultProvider().getBlockNumber())
-  ).timestamp;
-
-  const START_SALE_TIMESTAMP = polygonMainnetReady
-    ? JAN_22_START_SALE_TIMESTAMP
-    : currentTimestamp + 100000;
-  const END_SALE_TIMESTAMP = polygonMainnetReady
-    ? JAN_22_END_SALE_TIMESTAMP
-    : currentTimestamp + 100000 + 5184000;
 
   const startSaleTimestampDateFormat = new Date(START_SALE_TIMESTAMP * 1000);
   const endSaleTimestampDateFormat = new Date(END_SALE_TIMESTAMP * 1000);
@@ -165,17 +136,17 @@ async function main() {
 
   // Sale contract
   const SaleContract = await ethers.getContractFactory("Sale");
-  console.log("SaleContract Argument...", [
-    `whitelistMerkleRoot=${whitelistMerkleRoot}`,
-    `advisorMerkleRoot=${advisorMerkleRoot}`,
-    `START_SALE_TIMESTAMP=${START_SALE_TIMESTAMP}`,
-    `END_SALE_TIMESTAMP=${END_SALE_TIMESTAMP}`,
-    `process.env.OWNER=${process.env.OWNER}`,
-    `WETH_ADDRESS=${WETH_ADDRESS}`,
+  console.log("SaleContract constructor arguments...", [
+    `_whitelistMerkleRoot: ${ALPHA_SALE_WHITELIST_MERKLE_ROOT}`,
+    `_advisorMerkleRoot: ${ADVISORY_WHITELIST_MERKLE_ROOT}`,
+    `_startSaleBlockTimestamp: ${START_SALE_TIMESTAMP}`,
+    `_stopSaleBlockTimestamp: ${END_SALE_TIMESTAMP}`,
+    `_publicVerification: ${process.env.OWNER}`,
+    `_WETH: ${WETH_ADDRESS}`,
   ]);
   const saleContract = await SaleContract.deploy(
-    whitelistMerkleRoot,
-    advisorMerkleRoot,
+    ALPHA_SALE_WHITELIST_MERKLE_ROOT,
+    ADVISORY_WHITELIST_MERKLE_ROOT,
     START_SALE_TIMESTAMP,
     END_SALE_TIMESTAMP,
     process.env.OWNER,
@@ -198,6 +169,8 @@ async function main() {
   );
   console.info(`[KeyContract] expected address: "${keyContract.address}"`);
   await keyContract.deployed();
+  await saleContract.setKeysAddress(keyContract.address);
+  keyContract.setMagicalKeyTokenURI(MAGICAL_KEY_CID);
   console.info(
     `[KeyContract] 💡 Key contract deployed at address "${keyContract.address}"\n`
   );
@@ -237,11 +210,16 @@ async function main() {
   });
 
   const network = polygonMainnetReady ? "polygon" : "mumbai";
-  console.log("\n\n\nVerify the smart contracts with the suggested commands:", [
-    `npx hardhat verify --network ${network} ${saleContract.address} ${whitelistMerkleRoot} ${advisorMerkleRoot} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${process.env.OWNER} ${WETH_ADDRESS}`,
+  const commands = [
+    `npx hardhat verify --network ${network} ${saleContract.address} ${ALPHA_SALE_WHITELIST_MERKLE_ROOT} ${ADVISORY_WHITELIST_MERKLE_ROOT} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${process.env.OWNER} ${WETH_ADDRESS}`,
     `npx hardhat verify --network ${network} ${keyContract.address} ${saleContract.address}`,
     `npx hardhat verify --network ${network} ${scrollContractImplementation.address}`,
-  ]);
+  ];
+  console.log(
+    "\n\n\nVerify the smart contracts with the suggested commands:",
+    commands,
+    commands.join(" && ")
+  );
 
   return process.exit(0);
 }
