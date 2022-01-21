@@ -53,7 +53,6 @@ const isNetworkPolygonMainnet =
 const polygonMainnetReady = false || isNetworkPolygonMainnet;
 const networkName =
   polygonMainnetReady || isNetworkPolygonMainnet ? "Mainnet" : "Mumbai Testnet";
-const WETH_ADDRESS = "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
 
 async function main() {
   console.log(`✨ Polygon ${networkName} deployment initializing...\n\n\n`);
@@ -69,7 +68,18 @@ async function main() {
   }
 
   const { advisorMerkleRoot, whitelistMerkleRoot } = generateMerkleRoots();
+  const [deployer] = await ethers.getSigners();
 
+  let WETH_ADDRESS = process.env.WETH; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
+
+  if (!WETH_ADDRESS) {
+    const wethContract = await ethers.getContractFactory("MockWETH");
+    const wethContractDeploy = await wethContract.deploy();
+    WETH_ADDRESS = wethContractDeploy.address;
+    wethContractDeploy
+      .connect(deployer)
+      .mint(deployer.address, "200000000000000000000000000000");
+  }
   console.log("Deploying Sale Contract 📜...\n");
 
   const {
@@ -78,7 +88,6 @@ async function main() {
   } = hre.network;
   console.log(`🔌 Connected to "${name}" ChainID: ${chainId}`);
 
-  const [deployer] = await ethers.getSigners();
   console.log("Deploying using", deployer.toJSON());
   const deployerBalance =
     parseInt((await deployer.getBalance()).toString()) / 1e18;
