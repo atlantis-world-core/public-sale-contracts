@@ -1,12 +1,19 @@
 import * as dotenv from "dotenv";
 
 import { HardhatUserConfig, task } from "hardhat/config";
+import { useMerkleHelper } from "./helpers/merkle";
+import { getAddress } from "ethers/lib/utils";
+
+import ADVISORY_MERKLE from "./helpers/advisory-whitelist-output.json";
+import ALPHA_SALE_MERKLE from "./helpers/alpha-sale-whitelist-output.json";
+
 import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import { generateMerkleRoots } from "./helpers/generate";
 
 dotenv.config();
 
@@ -19,6 +26,43 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
     console.log(account.address);
   }
 });
+
+task(
+  "generate:root",
+  "Generate merkle roots for alpha sale whitelist and advisory whitelist",
+  async (args, hre) => {
+    const { advisorMerkleRoot, whitelistMerkleRoot } =
+      await generateMerkleRoots();
+
+    console.log("\n\n\n");
+
+    console.log("✨ advisorMerkleRoot", advisorMerkleRoot);
+    console.log("✨ whitelistMerkleRoot", whitelistMerkleRoot);
+  }
+);
+
+task("generate:proof", "Generate a merkle proof for a leaf with a merkle root")
+  .addParam("address", "The leaf node")
+  .setAction(async ({ address }, hre) => {
+    const merkle = useMerkleHelper();
+
+    const advisoryTree = merkle.createMerkleTree(
+      ADVISORY_MERKLE.leaves.map((leaf) => getAddress(leaf)).sort()
+    );
+    const advisoryRoot = merkle.createMerkleRoot(advisoryTree);
+    const advisoryProof = merkle.createMerkleProof(advisoryTree, address);
+
+    const alphaSaleTree = merkle.createMerkleTree(
+      ALPHA_SALE_MERKLE.leaves.map((leaf) => getAddress(leaf)).sort()
+    );
+    const alphaSaleRoot = merkle.createMerkleRoot(alphaSaleTree);
+    const alphaSaleProof = merkle.createMerkleProof(alphaSaleTree, address);
+
+    console.log("✨ advisoryRoot", advisoryRoot);
+    console.log("✨ alphaSaleRoot", alphaSaleRoot);
+    console.log("✨ advisoryProof", advisoryProof, advisoryProof.toString());
+    console.log("✨ alphaSaleProof", alphaSaleProof, alphaSaleProof.toString());
+  });
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more

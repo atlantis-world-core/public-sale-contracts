@@ -7,6 +7,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { testSetup } from "./utils";
 import { DeployContractsFunction, TestSetupArgs } from "./utils/types";
 import MerkleTree from "merkletreejs";
+import { BytesLike } from "ethers";
 
 describe("Sale", async () => {
   const merkleHelper = useMerkleHelper();
@@ -46,17 +47,15 @@ describe("Sale", async () => {
   // merkle proofs
   const validWhitelistProof = (_leaf?: string): string[] => {
     const [, leaf] = whitelistLeaves;
-    const hash = ethers.utils.keccak256(_leaf ?? leaf);
-    const proof = merkleHelper.createMerkleProof(whitelistMerkleTree, hash);
+    const proof = merkleHelper.createMerkleProof(whitelistMerkleTree, leaf);
     return proof;
   };
   const validAdvisorProof = (_leaf?: string): string[] => {
     const [leaf] = advisorLeaves;
-    const hash = ethers.utils.keccak256(_leaf ?? leaf);
-    const proof = merkleHelper.createMerkleProof(advisorMerkleTree, hash);
+    const proof = merkleHelper.createMerkleProof(advisorMerkleTree, leaf);
     return proof;
   };
-  const invalidMerkleProof = (): string[] => [];
+  const invalidMerkleProof = (): BytesLike[] => [];
 
   // ether
   const validMintPayment = ethers.utils.parseEther("0.22");
@@ -131,7 +130,7 @@ describe("Sale", async () => {
       // act & assert
       await expect(
         saleContract.advisoryMint(invalidMerkleProof(), overrides)
-      ).to.be.revertedWith("Not in the advisory list").and.to.be.reverted;
+      ).to.be.revertedWith("Not in the advisory list");
     });
 
     it(`SHOULD emit event KeyAdvisorMinted AND NOT revert with "Not in the advisory list", WHEN GIVEN a valid merkle proof AND the sale is still on-going`, async () => {
