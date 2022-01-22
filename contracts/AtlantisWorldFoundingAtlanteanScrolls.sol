@@ -1,12 +1,12 @@
 // SPDX-License-Identifier:  GNU General Public License v3.0
 pragma solidity ^0.8.10;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./@eip2981/ERC2981ContractWideRoyalties.sol";
 import "./interface/IAtlantisWorldFoundingAtlanteanScrolls.sol";
@@ -22,12 +22,12 @@ import "./lib/LibRoyaltiesV2.sol";
  */
 contract AtlantisWorldFoundingAtlanteanScrolls is
   IAtlantisWorldFoundingAtlanteanScrolls,
-  ERC721EnumerableUpgradeable,
-  ERC721URIStorageUpgradeable,
-  AccessControlUpgradeable,
-  OwnableUpgradeable,
+  ERC721Enumerable,
+  ERC721URIStorage,
+  AccessControl,
+  Ownable,
   RoyaltiesV2Impl,
-  ReentrancyGuardUpgradeable,
+  ReentrancyGuard,
   ERC2981ContractWideRoyalties
 {
   using Counters for Counters.Counter;
@@ -80,15 +80,11 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
    */
   event ScrollMinted(address user);
 
-  /**
-   * @dev On initialize, it sets up the address of the deployed Sale contract
-   * @param _saleContract The address of the deployed Sale contract
-   */
-  function initialize(address _saleContract) public initializer {
+  constructor(address _saleContract)
+    ERC721("Atlantis World: Founding Atlantean Scrolls", "AWFAS")
+  {
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
     _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
-    __ERC721_init("Atlantis World: Founding Atlantean Scrolls", "AWFAS");
-    __Ownable_init();
     _setRoyalties(msg.sender, 7500);
   }
 
@@ -197,12 +193,7 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
     public
     view
     virtual
-    override(
-      ERC721EnumerableUpgradeable,
-      ERC721Upgradeable,
-      AccessControlUpgradeable,
-      ERC2981Base
-    )
+    override(ERC721Enumerable, ERC721, AccessControl, ERC2981Base)
     returns (bool)
   {
     return
@@ -217,12 +208,12 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
     _setRoyalties(msg.sender, amount);
   }
 
-  /// @inheritdoc ERC721URIStorageUpgradeable
+  /// @inheritdoc ERC721URIStorage
   function tokenURI(uint256 tokenId)
     public
     view
     virtual
-    override(ERC721URIStorageUpgradeable, ERC721Upgradeable)
+    override(ERC721URIStorage, ERC721)
     returns (string memory)
   {
     return super.tokenURI(tokenId);
@@ -251,23 +242,23 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
     return "ipfs://";
   }
 
-  /// @inheritdoc ERC721URIStorageUpgradeable
+  /// @inheritdoc ERC721URIStorage
   function _burn(uint256 tokenId)
     internal
     virtual
-    override(ERC721URIStorageUpgradeable, ERC721Upgradeable)
+    override(ERC721URIStorage, ERC721)
   {
     require(false, "No burning allowed");
 
     super._burn(tokenId);
   }
 
-  /// @inheritdoc ERC721EnumerableUpgradeable
+  /// @inheritdoc ERC721Enumerable
   function _beforeTokenTransfer(
     address from,
     address to,
     uint256 tokenId
-  ) internal virtual override(ERC721EnumerableUpgradeable, ERC721Upgradeable) {
+  ) internal virtual override(ERC721Enumerable, ERC721) {
     super._beforeTokenTransfer(from, to, tokenId);
   }
 
