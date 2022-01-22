@@ -117,6 +117,12 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
   /// @notice When a new advisory merkle root is set
   event NewAdvisoryMerkleRootSet(uint256 indexed timestamp);
 
+  /// @notice When a left over public magical key gets minted to `treasuryAddress`
+  event MintLeftOverPublicMagicalKey(address indexed treasuryAddress);
+
+  /// @notice When a left over advisory magical key gets minted to `treasuryAddress`
+  event MintLeftOverAdvisoryMagicalKey(address indexed treasuryAddress);
+
   /**
    * @param _whitelistMerkleRoot The merkle root of whitelisted candidates
    * @param _advisorMerkleRoot The merkle root of advisor addresses
@@ -370,7 +376,7 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
    * @dev EIP2309 hasn't been implemented due to lack of clarity on implementation. The EIP only specifies the event, not the implementation.
    * @param _treasuryAddress The treasury address for Atlantis World
    */
-  function mintLeftOversAdvisoryKeys(address _treasuryAddress)
+  function mintLeftOverAdvisoryKey(address _treasuryAddress)
     external
     onlyOwner
     whenNotPaused
@@ -380,8 +386,12 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
       "The assigned address is an empty address."
     );
     require(advisoryKeyLimitCount <= ADVISORY_KEY_LIMIT);
+
     advisoryKeyLimitCount++;
+
     _magicalkeysContract.mintKeyToUser(_treasuryAddress);
+
+    emit MintLeftOverAdvisoryMagicalKey(_treasuryAddress);
   }
 
   /**
@@ -389,7 +399,7 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
    * @dev EIP2309 hasn't been implemented due to lack of clarity on implementation. The EIP only specifies the event, not the implementation.
    * @param _treasuryAddress The treasury address for Atlantis World
    */
-  function mintLeftOversPublicKeys(address _treasuryAddress)
+  function mintLeftOverPublicKey(address _treasuryAddress)
     external
     onlyOwner
     whenNotPaused
@@ -399,8 +409,12 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
       "The assigned address is an empty address."
     );
     require(publicKeyMintCount <= PUBLIC_KEY_LIMIT);
+
     publicKeyMintCount++;
+
     _magicalkeysContract.mintKeyToUser(_treasuryAddress);
+
+    emit MintLeftOverPublicMagicalKey(_treasuryAddress);
   }
 
   /// @notice to generate the hash using the nonce and the msg.sender
