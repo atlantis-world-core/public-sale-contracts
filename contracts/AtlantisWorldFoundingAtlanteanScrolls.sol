@@ -14,10 +14,12 @@ import "./lib/impl/RoyaltiesV2Impl.sol";
 import "./lib/LibPart.sol";
 import "./lib/LibRoyaltiesV2.sol";
 
-/// @title Atlantis World Founding Atlantean Scrolls contract, for managing the behaviour of ERC721 Scroll.
-/// @notice Contract is used for tracking the Scrolls claimed.
-/// @author Rachit Anand Srivastava, Carlo Miguel Dy
-/// @dev the contract is made upgradaeble using OpenZeppelin Upgadaeble Library
+/**
+ * @title Atlantis World Founding Atlantean Scrolls contract, for managing the behaviour of ERC721 Scroll.
+ * @notice Contract is used for tracking the Scrolls claimed.
+ * @author Rachit Anand Srivastava, Carlo Miguel Dy
+ * @dev the contract is made upgradaeble using OpenZeppelin Upgadaeble Library
+ */
 contract AtlantisWorldFoundingAtlanteanScrolls is
   IAtlantisWorldFoundingAtlanteanScrolls,
   ERC721EnumerableUpgradeable,

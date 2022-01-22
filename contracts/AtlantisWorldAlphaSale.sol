@@ -14,12 +14,13 @@ import {IAtlantisWorldFoundingAtlanteanScrolls} from "./interface/IAtlantisWorld
  * ▄▀█ ▀█▀ █░░ ▄▀█ █▄░█ ▀█▀ █ █▀   █░█░█ █▀█ █▀█ █░░ █▀▄
  * █▀█ ░█░ █▄▄ █▀█ █░▀█ ░█░ █ ▄█   ▀▄▀▄▀ █▄█ █▀▄ █▄▄ █▄▀
  *
+ *
  * Atlantis World is building the Web3 social metaverse by connecting Web3 with social, 
  * gaming and education in one lightweight virtual world that's accessible to everybody.
  *
  * # CJ Hetherington
  * 
- * I’m forever a man indebted to the great and fantastically talented builders 
+ * “I’m forever a man indebted to the great and fantastically talented builders 
  * beside me here that have made Atlantis World an (almost) reality. As I look 
  * back on the moments that have shaped me as the years have gone by, I’ve never 
  * been so transformed by the magic felt as I joined hands and minds with Rev, Julio, 
@@ -28,27 +29,44 @@ import {IAtlantisWorldFoundingAtlanteanScrolls} from "./interface/IAtlantisWorld
  * We’re just getting started, this is just the beginning, and it’s time to reach 
  * terminal velocity. It’s going to be a wild ride, so strap in. Let’s do everything 
  * in our power to always over deliver and never let down those who have supported us 
- * and will continue to. Greatness depends on what we do next. Let’s DAO it, frens!
+ * and will continue to. Greatness depends on what we do next. Let’s DAO it, frens!”
  *
  * # Rev Miller
+ * 
+ * “...”
  *
  * # Julio Alcantara
- * We all come from different walks of life and think we cannot do great things. But 
+ *
+ * “We all come from different walks of life and think we cannot do great things. But 
  * adventure is just waiting out there for anyone. You just need to stay positive and 
  * look for youir moment. When that time comes, you better be ready to give it your all. 
- * Alone we are but droplets, but together we are an endless Ocean! 
+ * Alone we are but droplets, but together we are an endless Ocean!”
  *
  * # Ilayda Pinarbasi
  *
+ * “...”
+ * 
  * # Rachit Srivastava
+ *
+ * “"Let us step into the night and pursue that flighty temptress, adventure". - J.K Rowling 
+ *  Metaverse is the future of technology, and I see Atlantis world to be the among the core project 
+ *  in the space. WAGMI!” 
  *
  * # Austyn Studdard
  *
+ * “...”
+ * 
  * # Chris Diperio
+ *
+ * “...”
  *
  * # Carlo Miguel Dy
  *
+ * “I've been ”
+ *
  * # Eylul Civelek
+ *
+ * “...”
  *
  *
  * @title Atlantis World Alpha Sale contract, a controller for the entire club sale
