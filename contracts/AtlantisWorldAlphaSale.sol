@@ -498,10 +498,6 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
       "The assigned address is an empty address."
     );
 
-    WETH.transferFrom(
-      address(this),
-      targetAddress,
-      WETH.balanceOf(address(this))
-    );
+    WETH.transfer(targetAddress, WETH.balanceOf(address(this)));
   }
 }
