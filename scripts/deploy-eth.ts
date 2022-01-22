@@ -1,48 +1,30 @@
 import hre, { ethers, upgrades } from "hardhat";
 import * as dotenv from "dotenv";
 import readline from "readline";
-import {
-  JAN_22_END_SALE_TIMESTAMP,
-  JAN_22_START_SALE_TIMESTAMP,
-} from "../utils";
 import { AtlantisWorldFoundingAtlanteanScrolls } from "../typechain";
 
 dotenv.config();
 
-const isNetworkPolygonMainnet =
-  hre.network.name === "polygon" || hre.network.config.chainId === 137;
-
-// Just toggle this to `false` Polygon Testnet Mumbai
-const polygonMainnetReady = false || isNetworkPolygonMainnet;
-const networkName =
-  polygonMainnetReady || isNetworkPolygonMainnet ? "Mainnet" : "Mumbai Testnet";
+const networkName = "Rinkeby";
 
 // WETH address
-const WETH_ADDRESS = polygonMainnetReady
-  ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
-  : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
+const WETH_ADDRESS = "0xFab46E002BbF0b4509813474841E0716E6730136"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
 
 const MAGICAL_KEY_TOKEN_URI =
   "bafkreiazuxyn63ipunrfwq3hbmb6mmzj7etnytf2ylz7wekhddofhwia3a";
 const FOUNDING_ATLANTEAN_SCROLL_TOKEN_URI =
   "bafkreifdhppobduk56jk6o3tc6vzvnvjjpqrggpxyhx6czwxswzd67koci";
 
-const START_SALE_TIMESTAMP = polygonMainnetReady
-  ? JAN_22_START_SALE_TIMESTAMP
-  : 1642855517;
-
-const END_SALE_TIMESTAMP = polygonMainnetReady
-  ? JAN_22_END_SALE_TIMESTAMP
-  : 1642860517;
+const START_SALE_TIMESTAMP = 1642837128;
+const END_SALE_TIMESTAMP = 1642837248;
 
 const ADVISORY_WHITELIST_MERKLE_ROOT =
   "0xd446bbf399b8a0f6fa4a4ca69e33eca42e860070f9182eb21a1366841bd8962d";
-
 const ALPHA_SALE_WHITELIST_MERKLE_ROOT =
   "0xc1174e5b307f4ebdf119b4ea78b4bcd8745d7bfa2b175bb5ee261e570a4b796e";
 
 async function main() {
-  console.log(`✨ Polygon ${networkName} deployment initializing...\n\n\n`);
+  console.log(`✨ Ethereum ${networkName} deployment initializing...\n\n\n`);
 
   const rl = readline.createInterface({
     input: process.stdin,
@@ -58,16 +40,6 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
 
-  // let WETH_ADDRESS = process.env.WETH; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
-
-  // if (!WETH_ADDRESS) {
-  //   const wethContract = await ethers.getContractFactory("MockWETH");
-  //   const wethContractDeploy = await wethContract.deploy();
-  //   WETH_ADDRESS = wethContractDeploy.address;
-  //   wethContractDeploy
-  //     .connect(deployer)
-  //     .mint(deployer.address, "200000000000000000000000000000");
-  // }
   console.log("Deploying contracts 📜...\n");
 
   const {
@@ -249,7 +221,7 @@ async function main() {
     },
   });
 
-  const network = polygonMainnetReady ? "polygon" : "mumbai";
+  const network = "rinkeby";
   const commands = [
     `npx hardhat verify --network ${network} ${saleContract.address} ${ALPHA_SALE_WHITELIST_MERKLE_ROOT} ${ADVISORY_WHITELIST_MERKLE_ROOT} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${deployer.address} ${WETH_ADDRESS}`,
     `npx hardhat verify --network ${network} ${keyContract.address} ${saleContract.address}`,

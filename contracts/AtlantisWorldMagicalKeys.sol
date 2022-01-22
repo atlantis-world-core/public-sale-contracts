@@ -9,10 +9,10 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./@eip2981/ERC2981ContractWideRoyalties.sol";
 
-/// @title Keys Contract, for managing the behaviour of ERC721 keys
+/// @title Atlantis World Magical Keys contract, for managing the behaviour of ERC721 keys
 /// @author Rachit Anand Srivastava, Carlo Miguel Dy
 /// @notice Contract is used for tracking the keys claimed. These are non transferable erc721 contracts.
-contract Keys is
+contract AtlantisWorldMagicalKeys is
   ERC721Enumerable,
   ERC721URIStorage,
   AccessControl,

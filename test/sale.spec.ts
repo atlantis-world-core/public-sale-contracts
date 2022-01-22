@@ -2,18 +2,18 @@ import { useMerkleHelper } from "../helpers/merkle";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { MockWETH, Sale } from "../typechain";
+import { AtlantisWorldAlphaSale, MockWETH } from "../typechain";
 import { BigNumber } from "@ethersproject/bignumber";
 import { testSetup } from "./utils";
-import { DeployContractsFunction, TestSetupArgs } from "./utils/types";
+import { DeployContractsFunction } from "./utils/types";
 import MerkleTree from "merkletreejs";
 import { BytesLike } from "ethers";
 
-describe("Sale", async () => {
+describe("AtlantisWorldAlphaSale", async () => {
   const merkleHelper = useMerkleHelper();
 
   // contracts
-  let saleContract: Sale;
+  let saleContract: AtlantisWorldAlphaSale;
   let wethContract: MockWETH;
 
   // helper
@@ -299,11 +299,11 @@ describe("Sale", async () => {
   });
 
   describe("sellKeyForScroll", () => {
-    it("Start key to scroll swap timestamp is zero", async () => {
-      expect(
-        (await saleContract.startKeyToScrollSwapTimestamp()).toString()
-      ).to.equal("0");
-    });
+    // it("Start key to scroll swap timestamp is zero", async () => {
+    //   expect(
+    //     (await saleContract.startKeyToScrollSwapTimestamp()).toString()
+    //   ).to.equal("0");
+    // });
 
     it(`SHOULD revert with "ERC721: owner query for nonexistent token", WHEN the sale timeframe is over AND attempts to burn a key that caller doesn't own`, async () => {
       // arrange

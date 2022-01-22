@@ -1,14 +1,17 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, ethers } from "ethers";
-import { Sale, ScrollContract } from "../typechain";
+import {
+  AtlantisWorldAlphaSale,
+  AtlantisWorldFoundingAtlanteanScrolls,
+} from "../typechain";
 import { testSetup } from "./utils";
 import { DeployContractsFunction } from "./utils/types";
 
-describe("ScrollContract", () => {
+describe("AtlantisWorldFoundingAtlanteanScrolls", () => {
   // contracts
-  let scrollContract: ScrollContract;
-  let saleContract: Sale;
+  let scrollContract: AtlantisWorldFoundingAtlanteanScrolls;
+  let saleContract: AtlantisWorldAlphaSale;
   // helper
   let deployContracts: DeployContractsFunction;
   // signers
@@ -38,7 +41,7 @@ describe("ScrollContract", () => {
         BigNumber.from(parseInt((currentTimestamp + 1000 + 5184000).toString()))
       );
     saleContract = _saleContract;
-    scrollContract = _scrollContract as ScrollContract;
+    scrollContract = _scrollContract as AtlantisWorldFoundingAtlanteanScrolls;
     scrollContract = scrollContract.connect(owner);
   };
   beforeEach(async () => await setup());

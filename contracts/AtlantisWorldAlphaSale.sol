@@ -7,19 +7,22 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IKeys} from "./interface/IKeys.sol";
-import {IScroll} from "./interface/IScroll.sol";
+import {IAtlantisWorldMagicalKeys} from "./interface/IAtlantisWorldMagicalKeys.sol";
+import {IAtlantisWorldFoundingAtlanteanScrolls} from "./interface/IAtlantisWorldFoundingAtlanteanScrolls.sol";
 
-/// @title A controller for the entire club sale
-/// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
-/// @author Rachit Anand Srivastava, Carlo Miguel Dy
-/// @dev All function calls are implemented with side effects on the key and scroll contracts
-contract Sale is Ownable, Pausable, ReentrancyGuard {
+/**
+ * @title Atlantis World Alpha Sale contract, a controller for the entire club sale
+ * @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
+ * @author Rachit Anand Srivastava, Carlo Miguel Dy
+ * @dev All function calls are implemented with side effects on the key and scroll contracts
+ */
+contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice Key contracts
    */
-  IKeys private _keysContract;
-  IScroll private _scrollContract;
+  IAtlantisWorldMagicalKeys private _magicalkeysContract;
+  IAtlantisWorldFoundingAtlanteanScrolls
+    private _foundingAtlanteanScrollsContract;
 
   /**
    * @notice All the merkle roots - whitelist address and advisor addresses
@@ -79,11 +82,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
   mapping(address => uint256) private _addressToMintCount;
 
   /**
-   * @notice The timestamp for when swapping keys for a scroll begins
-   */
-  uint256 public startKeyToScrollSwapTimestamp;
-
-  /**
    * @notice Emits an event when an advisor have minted
    */
   event KeyAdvisorMinted(address indexed sender);
@@ -118,6 +116,18 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
   /// @notice When a new advisory merkle root is set
   event NewAdvisoryMerkleRootSet(uint256 indexed timestamp);
+
+  /// @notice When a left over public magical key gets minted to `treasuryAddress`
+  event MintLeftOverPublicMagicalKey(address indexed treasuryAddress);
+
+  /// @notice When a left over advisory magical key gets minted to `treasuryAddress`
+  event MintLeftOverAdvisoryMagicalKey(address indexed treasuryAddress);
+
+  /// @notice When a new start timestamp is added
+  event NewStartTime(uint256 indexed timestamp);
+
+  /// @notice When a new end timestamp is added
+  event NewEndTime(uint256 indexed timestamp);
 
   /**
    * @param _whitelistMerkleRoot The merkle root of whitelisted candidates
@@ -284,7 +294,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     _advisoryAddressToClaimed[msg.sender] = true;
     _addressToMintCount[msg.sender]++;
 
-    _keysContract.mintKeyToUser(msg.sender);
+    _magicalkeysContract.mintKeyToUser(msg.sender);
 
     emit KeyAdvisorMinted(msg.sender);
   }
@@ -313,7 +323,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     _publicSaleWhitelisterToClaimed[msg.sender] = true;
     _addressToMintCount[msg.sender]++;
 
-    _keysContract.mintKeyToUser(msg.sender);
+    _magicalkeysContract.mintKeyToUser(msg.sender);
 
     emit KeyWhitelistMinted(msg.sender);
   }
@@ -345,7 +355,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     publicKeyMintCount++;
     _addressToMintCount[msg.sender]++;
 
-    _keysContract.mintKeyToUser(msg.sender);
+    _magicalkeysContract.mintKeyToUser(msg.sender);
 
     emit KeyPublicMinted(msg.sender);
   }
@@ -354,38 +364,63 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
    * @notice To swap the key for scroll on reveal
    */
   function sellKeyForScroll(uint256 _tokenId)
-    external
+    public
     nonReentrant
     whenNotPaused
   {
-    _keysContract.burnKeyOfUser(_tokenId, msg.sender);
+    _magicalkeysContract.burnKeyOfUser(_tokenId, msg.sender);
 
     bool isAdvisoryMinter = _advisoryAddressToClaimed[msg.sender];
 
-    _scrollContract.mint(msg.sender, isAdvisoryMinter);
+    _foundingAtlanteanScrollsContract.mint(msg.sender, isAdvisoryMinter);
 
     emit KeySwapped(msg.sender, _tokenId);
   }
 
   /**
-   * @notice Minting unminted tokens to treasury
+   * @notice Minting unminted advisory tokens to treasury
    * @dev EIP2309 hasn't been implemented due to lack of clarity on implementation. The EIP only specifies the event, not the implementation.
    * @param _treasuryAddress The treasury address for Atlantis World
    */
-  function mintLeftOvers(address _treasuryAddress)
+  function mintLeftOverAdvisoryKey(address _treasuryAddress)
     external
     onlyOwner
     whenNotPaused
   {
-    for (
-      uint256 i = 0;
-      i < TOTAL_SUPPLY - (publicKeyMintCount + advisoryKeyLimitCount);
-      i++
-    ) _keysContract.mintKeyToUser(_treasuryAddress);
+    require(
+      _treasuryAddress != address(0),
+      "The assigned address is an empty address."
+    );
+    require(advisoryKeyLimitCount <= ADVISORY_KEY_LIMIT);
 
-    _advisoryAddressToClaimed[_treasuryAddress] = true;
-    publicKeyMintCount = PUBLIC_KEY_LIMIT;
-    advisoryKeyLimitCount = ADVISORY_KEY_LIMIT;
+    advisoryKeyLimitCount++;
+
+    _magicalkeysContract.mintKeyToUser(_treasuryAddress);
+
+    emit MintLeftOverAdvisoryMagicalKey(_treasuryAddress);
+  }
+
+  /**
+   * @notice Minting unminted public tokens to treasury
+   * @dev EIP2309 hasn't been implemented due to lack of clarity on implementation. The EIP only specifies the event, not the implementation.
+   * @param _treasuryAddress The treasury address for Atlantis World
+   */
+  function mintLeftOverPublicKey(address _treasuryAddress)
+    external
+    onlyOwner
+    whenNotPaused
+  {
+    require(
+      _treasuryAddress != address(0),
+      "The assigned address is an empty address."
+    );
+    require(publicKeyMintCount <= PUBLIC_KEY_LIMIT);
+
+    publicKeyMintCount++;
+
+    _magicalkeysContract.mintKeyToUser(_treasuryAddress);
+
+    emit MintLeftOverPublicMagicalKey(_treasuryAddress);
   }
 
   /// @notice to generate the hash using the nonce and the msg.sender
@@ -439,7 +474,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     onlyOwner
     notAddressZero(_address)
   {
-    _keysContract = IKeys(_address);
+    _magicalkeysContract = IAtlantisWorldMagicalKeys(_address);
 
     emit NewKeysAddress(_address);
   }
@@ -452,13 +487,38 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     onlyOwner
     notAddressZero(_address)
   {
-    _scrollContract = IScroll(_address);
+    _foundingAtlanteanScrollsContract = IAtlantisWorldFoundingAtlanteanScrolls(
+      _address
+    );
 
     emit NewScrollAddress(_address);
   }
 
+  /// @notice Safety function to set the WETH Contract Address
   function setWETHAddress(address _address) external onlyOwner {
     WETH = IERC20(_address);
+  }
+
+  /// @notice Set the sale start time
+  function setStartTime(uint256 _startTimeStamp) external onlyOwner {
+    require(_startTimeStamp >= block.timestamp, "Invalid start date");
+
+    startSaleBlockTimestamp = _startTimeStamp;
+
+    emit NewStartTime(_startTimeStamp);
+  }
+
+  /// @notice Set the sale end time
+  function setEndTime(uint256 _stopTimeStamp) external onlyOwner {
+    require(
+      _stopTimeStamp >= block.timestamp &&
+        _stopTimeStamp > startSaleBlockTimestamp,
+      "Invalid stop date"
+    );
+
+    stopSaleBlockTimestamp = _stopTimeStamp;
+
+    emit NewEndTime(_stopTimeStamp);
   }
 
   // ***************
@@ -498,10 +558,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       "The assigned address is an empty address."
     );
 
-    WETH.transferFrom(
-      address(this),
-      targetAddress,
-      WETH.balanceOf(address(this))
-    );
+    WETH.transfer(targetAddress, WETH.balanceOf(address(this)));
   }
 }
