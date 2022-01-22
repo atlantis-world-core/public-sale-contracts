@@ -24,7 +24,6 @@ const WETH_ADDRESS = polygonMainnetReady
 
 const MAGICAL_KEY_TOKEN_URI =
   "bafkreief2sxcsudbhr6dtzaxdjdoryu52nq6pxjuhvov6u7siexob7mqba";
-
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
   : 1642876963;
