@@ -57,6 +57,26 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
    */
   uint256[] private _publicTokenIds;
 
+  /**
+   * @dev Keeps track of all advisory token IDs that have the tokenURI updated.
+   */
+  mapping(uint256 => bool) private _advisoryTokenIdToURIUpdated;
+
+  /**
+   * @dev Keeps track of all public token IDs that have the tokenURI updated.
+   */
+  mapping(uint256 => bool) private _publicTokenIdToURIUpdated;
+
+  /**
+   * @dev Keeps track of each token ID if it was minted by an advisory.
+   */
+  mapping(uint256 => bool) private _tokenIdToAdvisoryMint;
+
+  /**
+   * @dev Keeps track of each token ID if it was minted by public.
+   */
+  mapping(uint256 => bool) private _tokenIdToPublicMint;
+
   event UpdatedRoyalties(address newRoyaltyAddress, uint256 newPercentage);
 
   /**
@@ -74,6 +94,42 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
     __ERC721_init("Atlantis World: Founding Atlantean Scrolls", "AWFAS");
     __Ownable_init();
     _setRoyalties(msg.sender, 7500);
+  }
+
+  /**
+   * @dev Checks if the advisory tokenId has the tokenURI updated.
+   */
+  function advisoryTokenIdToURIUpdated(uint256 tokenId)
+    external
+    view
+    returns (bool)
+  {
+    return _advisoryTokenIdToURIUpdated[tokenId];
+  }
+
+  /**
+   * @dev Checks if the public tokenId has the tokenURI updated.
+   */
+  function publicTokenIdToURIUpdated(uint256 tokenId)
+    external
+    view
+    returns (bool)
+  {
+    return _publicTokenIdToURIUpdated[tokenId];
+  }
+
+  /**
+   * @dev Checks if the tokenId was minted by an advisory.
+   */
+  function tokenIdToAdvisoryMint(uint256 tokenId) public view returns (bool) {
+    return _tokenIdToAdvisoryMint[tokenId];
+  }
+
+  /**
+   * @dev Checks if the tokenId was minted from public.
+   */
+  function tokenIdToPublicMint(uint256 tokenId) public view returns (bool) {
+    return _tokenIdToPublicMint[tokenId];
   }
 
   /**
@@ -133,8 +189,10 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
 
     if (isAdvisoryMinter) {
       _advisoryTokenIds.push(currentTokenId);
+      _tokenIdToAdvisoryMint[currentTokenId] = true;
     } else {
       _publicTokenIds.push(currentTokenId);
+      _tokenIdToPublicMint[currentTokenId] = true;
     }
 
     _safeMint(_user, currentTokenId);
@@ -191,6 +249,12 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
     external
     onlyOwner
   {
+    if (tokenIdToAdvisoryMint(tokenId)) {
+      _advisoryTokenIdToURIUpdated[tokenId] = true;
+    } else if (tokenIdToPublicMint(tokenId)) {
+      _publicTokenIdToURIUpdated[tokenId] = true;
+    }
+
     _setTokenURI(tokenId, _tokenURI);
   }
 
@@ -207,6 +271,8 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
     virtual
     override(ERC721URIStorageUpgradeable, ERC721Upgradeable)
   {
+    require(false, "No burning allowed");
+
     super._burn(tokenId);
   }
 

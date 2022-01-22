@@ -23,9 +23,9 @@ const WETH_ADDRESS = polygonMainnetReady
   : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
 
 const MAGICAL_KEY_TOKEN_URI =
-  "bafybeieqybu57sr3alxl6n7rrge3yfwzqwv4pghmirm35aedclt7poav7y";
+  "bafkreiazuxyn63ipunrfwq3hbmb6mmzj7etnytf2ylz7wekhddofhwia3a";
 const FOUNDING_ATLANTEAN_SCROLL_TOKEN_URI =
-  "bafybeievwhkikv5xny6u7fvonbmhzrh6rpqystkcd4bfwgvbh7cbesxawy";
+  "bafkreifdhppobduk56jk6o3tc6vzvnvjjpqrggpxyhx6czwxswzd67koci";
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
