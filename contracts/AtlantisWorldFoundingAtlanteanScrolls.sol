@@ -35,16 +35,6 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
   bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
 
   /**
-   * @dev The advisory tokenURI metadata CID
-   */
-  string public advisoryTokenURI;
-
-  /**
-   * @dev The public tokenURI metadata CID
-   */
-  string public publicTokenURI;
-
-  /**
    * @notice The current mint count
    */
   Counters.Counter private _tokenIds;
@@ -79,9 +69,9 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
    */
   mapping(uint256 => bool) private _tokenIdToPublicMint;
 
-  string[3] private _advisoryCIDs;
+  string[4] private _advisoryCIDs;
 
-  string[3] private _publicCIDs;
+  string[4] private _publicCIDs;
 
   event UpdatedRoyalties(address newRoyaltyAddress, uint256 newPercentage);
 
@@ -102,11 +92,11 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
     _setRoyalties(msg.sender, 7500);
   }
 
-  function setAdvisoryCIDs(string[3] memory _uris) external onlyOwner {
+  function setAdvisoryCIDs(string[4] memory _uris) external onlyOwner {
     _advisoryCIDs = _uris;
   }
 
-  function setPublicCIDs(string[3] memory _uris) external onlyOwner {
+  function setPublicCIDs(string[4] memory _uris) external onlyOwner {
     _publicCIDs = _uris;
   }
 
@@ -158,26 +148,6 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
    */
   function getPublicTokenIds() external view returns (uint256[] memory) {
     return _publicTokenIds;
-  }
-
-  /**
-   * @dev Set the `advisoryTokenURI`
-   */
-  function setAdvisoryTokenURI(string calldata _advisoryTokenURI)
-    external
-    onlyOwner
-  {
-    advisoryTokenURI = _advisoryTokenURI;
-  }
-
-  /**
-   * @dev Set the `publicTokenURI`
-   */
-  function setPublicTokenURI(string calldata _publicTokenURI)
-    external
-    onlyOwner
-  {
-    publicTokenURI = _publicTokenURI;
   }
 
   /**
