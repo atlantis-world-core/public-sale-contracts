@@ -28,11 +28,11 @@ const FOUNDING_ATLANTEAN_SCROLL_CID =
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
-  : 1642779954;
+  : 1642821948;
 
 const END_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_END_SALE_TIMESTAMP
-  : 1642787154;
+  : 1642822248;
 
 const ADVISORY_WHITELIST_MERKLE_ROOT =
   "0xd446bbf399b8a0f6fa4a4ca69e33eca42e860070f9182eb21a1366841bd8962d";
@@ -159,7 +159,9 @@ async function main() {
   ]);
 
   // Sale contract
-  const SaleContract = await ethers.getContractFactory("Sale");
+  const SaleContract = await ethers.getContractFactory(
+    "AtlantisWorldAlphaSale"
+  );
   const saleContract = await SaleContract.deploy(
     ALPHA_SALE_WHITELIST_MERKLE_ROOT,
     ADVISORY_WHITELIST_MERKLE_ROOT,
@@ -180,7 +182,9 @@ async function main() {
   );
 
   // Key contract
-  const KeyContract = await ethers.getContractFactory("Keys");
+  const KeyContract = await ethers.getContractFactory(
+    "AtlantisWorldMagicalKeys"
+  );
   const keyContract = await KeyContract.deploy(saleContract.address);
   console.info(
     `\n[KeyContract] transaction hash`,
@@ -196,7 +200,9 @@ async function main() {
   await keyContract.setMagicalKeyTokenURI(MAGICAL_KEY_CID);
 
   // Scroll proxy contract
-  const ScrollProxyContract = await ethers.getContractFactory("ScrollContract");
+  const ScrollProxyContract = await ethers.getContractFactory(
+    "AtlantisWorldFoundingAtlanteanScrolls"
+  );
   const scrollContractImplementation = await ScrollProxyContract.deploy();
   const scrollContract = await upgrades.deployProxy(
     ScrollProxyContract,
