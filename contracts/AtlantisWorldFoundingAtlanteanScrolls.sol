@@ -79,6 +79,10 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
    */
   mapping(uint256 => bool) private _tokenIdToPublicMint;
 
+  string[3] private _advisoryCIDs;
+
+  string[3] private _publicCIDs;
+
   event UpdatedRoyalties(address newRoyaltyAddress, uint256 newPercentage);
 
   /**
@@ -96,6 +100,14 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
     __ERC721_init("Atlantis World: Founding Atlantean Scrolls", "AWFAS");
     __Ownable_init();
     _setRoyalties(msg.sender, 7500);
+  }
+
+  function setAdvisoryCIDs(string[3] memory _uris) external onlyOwner {
+    _advisoryCIDs = _uris;
+  }
+
+  function setPublicCIDs(string[3] memory _uris) external onlyOwner {
+    _publicCIDs = _uris;
   }
 
   /**
@@ -186,22 +198,24 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
   {
     require(address(0x0) != _user, "Must not be an empty address");
 
+    uint256 guildId = block.timestamp % 4;
+    string memory guildTokenURI;
+
     _tokenIds.increment();
     uint256 currentTokenId = _tokenIds.current();
 
     if (isAdvisoryMinter) {
       _advisoryTokenIds.push(currentTokenId);
       _tokenIdToAdvisoryMint[currentTokenId] = true;
+      guildTokenURI = _advisoryCIDs[guildId];
     } else {
       _publicTokenIds.push(currentTokenId);
       _tokenIdToPublicMint[currentTokenId] = true;
+      guildTokenURI = _publicCIDs[guildId];
     }
 
     _safeMint(_user, currentTokenId);
-    _setTokenURI(
-      currentTokenId,
-      isAdvisoryMinter ? advisoryTokenURI : publicTokenURI
-    );
+    _setTokenURI(currentTokenId, guildTokenURI);
 
     emit ScrollMinted(_user);
   }
