@@ -72,7 +72,7 @@ contract Keys is
   {
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
     _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
-    _setRoyalties(msg.sender, 750);
+    _setRoyalties(msg.sender, 7500);
   }
 
   /**

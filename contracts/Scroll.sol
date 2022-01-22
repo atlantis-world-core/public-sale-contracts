@@ -73,7 +73,7 @@ contract ScrollContract is
     _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
     __ERC721_init("Atlantis World: Founding Atlantean Scrolls", "AWFAS");
     __Ownable_init();
-    _setRoyalties(msg.sender, 750);
+    _setRoyalties(msg.sender, 7500);
   }
 
   /**
