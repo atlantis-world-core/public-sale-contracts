@@ -1,10 +1,14 @@
 import { MockContract } from "ethereum-waffle";
 import { BigNumber, Contract } from "ethers";
-import { Keys, MockWETH, Sale } from "../../typechain";
+import {
+  AtlantisWorldAlphaSale,
+  AtlantisWorldMagicalKeys,
+  MockWETH,
+} from "../../typechain";
 
 export type DeployContractsFunctionResult = {
-  saleContract: Sale;
-  keysContract: Keys;
+  saleContract: AtlantisWorldAlphaSale;
+  keysContract: AtlantisWorldMagicalKeys;
   scrollContract: Contract;
   mockSaleContract: MockContract;
   wethContract: MockWETH;

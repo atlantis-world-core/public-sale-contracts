@@ -9,17 +9,17 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./@eip2981/ERC2981ContractWideRoyalties.sol";
-import "./interface/IScroll.sol";
+import "./interface/IAtlantisWorldFoundingAtlanteanScrolls.sol";
 import "./lib/impl/RoyaltiesV2Impl.sol";
 import "./lib/LibPart.sol";
 import "./lib/LibRoyaltiesV2.sol";
 
-/// @title Scroll Contract, for managing the behaviour of ERC721 Scroll.
+/// @title Atlantis World Founding Atlantean Scrolls contract, for managing the behaviour of ERC721 Scroll.
 /// @notice Contract is used for tracking the Scrolls claimed.
 /// @author Rachit Anand Srivastava, Carlo Miguel Dy
 /// @dev the contract is made upgradaeble using OpenZeppelin Upgadaeble Library
-contract ScrollContract is
-  IScroll,
+contract AtlantisWorldFoundingAtlanteanScrolls is
+  IAtlantisWorldFoundingAtlanteanScrolls,
   ERC721EnumerableUpgradeable,
   ERC721URIStorageUpgradeable,
   AccessControlUpgradeable,

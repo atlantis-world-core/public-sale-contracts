@@ -7,19 +7,22 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IKeys} from "./interface/IKeys.sol";
-import {IScroll} from "./interface/IScroll.sol";
+import {IAtlantisWorldMagicalKeys} from "./interface/IAtlantisWorldMagicalKeys.sol";
+import {IAtlantisWorldFoundingAtlanteanScrolls} from "./interface/IAtlantisWorldFoundingAtlanteanScrolls.sol";
 
-/// @title A controller for the entire club sale
-/// @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
-/// @author Rachit Anand Srivastava, Carlo Miguel Dy
-/// @dev All function calls are implemented with side effects on the key and scroll contracts
-contract Sale is Ownable, Pausable, ReentrancyGuard {
+/**
+ * @title Atlantis World Alpha Sale contract, a controller for the entire club sale
+ * @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
+ * @author Rachit Anand Srivastava, Carlo Miguel Dy
+ * @dev All function calls are implemented with side effects on the key and scroll contracts
+ */
+contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
   /**
    * @notice Key contracts
    */
-  IKeys private _keysContract;
-  IScroll private _scrollContract;
+  IAtlantisWorldMagicalKeys private _magicalkeysContract;
+  IAtlantisWorldFoundingAtlanteanScrolls
+    private _foundingAtlanteanScrollsContract;
 
   /**
    * @notice All the merkle roots - whitelist address and advisor addresses
@@ -77,11 +80,6 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
 
   /// @dev Keeps track of the mint count for the minter address
   mapping(address => uint256) private _addressToMintCount;
-
-  /**
-   * @notice The timestamp for when swapping keys for a scroll begins
-   */
-  uint256 public startKeyToScrollSwapTimestamp;
 
   /**
    * @notice Emits an event when an advisor have minted
@@ -284,7 +282,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     _advisoryAddressToClaimed[msg.sender] = true;
     _addressToMintCount[msg.sender]++;
 
-    _keysContract.mintKeyToUser(msg.sender);
+    _magicalkeysContract.mintKeyToUser(msg.sender);
 
     emit KeyAdvisorMinted(msg.sender);
   }
@@ -313,7 +311,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     _publicSaleWhitelisterToClaimed[msg.sender] = true;
     _addressToMintCount[msg.sender]++;
 
-    _keysContract.mintKeyToUser(msg.sender);
+    _magicalkeysContract.mintKeyToUser(msg.sender);
 
     emit KeyWhitelistMinted(msg.sender);
   }
@@ -345,7 +343,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     publicKeyMintCount++;
     _addressToMintCount[msg.sender]++;
 
-    _keysContract.mintKeyToUser(msg.sender);
+    _magicalkeysContract.mintKeyToUser(msg.sender);
 
     emit KeyPublicMinted(msg.sender);
   }
@@ -358,11 +356,11 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     nonReentrant
     whenNotPaused
   {
-    _keysContract.burnKeyOfUser(_tokenId, msg.sender);
+    _magicalkeysContract.burnKeyOfUser(_tokenId, msg.sender);
 
     bool isAdvisoryMinter = _advisoryAddressToClaimed[msg.sender];
 
-    _scrollContract.mint(msg.sender, isAdvisoryMinter);
+    _foundingAtlanteanScrollsContract.mint(msg.sender, isAdvisoryMinter);
 
     emit KeySwapped(msg.sender, _tokenId);
   }
@@ -381,7 +379,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
       uint256 i = 0;
       i < TOTAL_SUPPLY - (publicKeyMintCount + advisoryKeyLimitCount);
       i++
-    ) _keysContract.mintKeyToUser(_treasuryAddress);
+    ) _magicalkeysContract.mintKeyToUser(_treasuryAddress);
 
     _advisoryAddressToClaimed[_treasuryAddress] = true;
     publicKeyMintCount = PUBLIC_KEY_LIMIT;
@@ -439,7 +437,7 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     onlyOwner
     notAddressZero(_address)
   {
-    _keysContract = IKeys(_address);
+    _magicalkeysContract = IAtlantisWorldMagicalKeys(_address);
 
     emit NewKeysAddress(_address);
   }
@@ -452,7 +450,9 @@ contract Sale is Ownable, Pausable, ReentrancyGuard {
     onlyOwner
     notAddressZero(_address)
   {
-    _scrollContract = IScroll(_address);
+    _foundingAtlanteanScrollsContract = IAtlantisWorldFoundingAtlanteanScrolls(
+      _address
+    );
 
     emit NewScrollAddress(_address);
   }

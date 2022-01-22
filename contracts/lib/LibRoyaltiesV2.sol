@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GNU General Public License v3.0
 pragma solidity ^0.8.10;
 
 /// @notice Please note that the interface hash used in the below code can change from previous commits.

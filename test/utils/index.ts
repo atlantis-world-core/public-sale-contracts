@@ -2,7 +2,6 @@ import { deployMockContract } from "ethereum-waffle";
 import { ethers, upgrades } from "hardhat";
 import { useMerkleHelper } from "../../helpers/merkle";
 import { BigNumber } from "ethers";
-import { Sale } from "../../typechain";
 import { fromUnixTimestamp } from "../../helpers/time";
 import {
   DeployContractsFunction,
@@ -13,7 +12,8 @@ import {
   WHITELISTED_USERS,
 } from "../../helpers/whitelist";
 
-import SaleABI from "../../artifacts/contracts/Sale.sol/Sale.json";
+import AtlantisWorldAlphaSaleABI from "../../artifacts/contracts/AtlantisWorldAlphaSale.sol/AtlantisWorldAlphaSale.json";
+import { AtlantisWorldAlphaSale } from "../../typechain";
 
 export const testSetup = async () => {
   const useEthersJsSigners = true;
@@ -47,9 +47,12 @@ export const testSetup = async () => {
     startSaleBlockTimestamp?: BigNumber,
     stopSaleBlockTimestamp?: BigNumber
   ): Promise<DeployContractsFunctionResult> => {
-    const SaleContract = await ethers.getContractFactory("Sale", {
-      signer: owner,
-    });
+    const SaleContract = await ethers.getContractFactory(
+      "AtlantisWorldAlphaSale",
+      {
+        signer: owner,
+      }
+    );
 
     const WETH = await ethers.getContractFactory("MockWETH");
     const wethContract = await WETH.deploy();
@@ -62,21 +65,30 @@ export const testSetup = async () => {
       owner.address,
       wethContract.address
     );
-    const mockSaleContract = await deployMockContract(owner, SaleABI.abi);
+    const mockSaleContract = await deployMockContract(
+      owner,
+      AtlantisWorldAlphaSaleABI.abi
+    );
     await saleContract.deployed();
 
     // Keys contract deploy
-    const KeysContract = await ethers.getContractFactory("Keys", {
-      signer: owner,
-    });
+    const KeysContract = await ethers.getContractFactory(
+      "AtlantisWorldMagicalKeys",
+      {
+        signer: owner,
+      }
+    );
     const keysContract = await KeysContract.deploy(saleContract.address);
     await keysContract.deployed();
     await saleContract.setKeysAddress(keysContract.address);
 
     // ScrollContract deploy
-    const ScrollContract = await ethers.getContractFactory("ScrollContract", {
-      signer: owner,
-    });
+    const ScrollContract = await ethers.getContractFactory(
+      "AtlantisWorldFoundingAtlanteanScrolls",
+      {
+        signer: owner,
+      }
+    );
     const scrollContract = await upgrades.deployProxy(
       ScrollContract,
       [saleContract.address],
@@ -97,7 +109,10 @@ export const testSetup = async () => {
    * @description
    * Just logs the timestamps from the smart contract.
    */
-  const logTimestamps = async (saleContract: Sale, metadata?: any) => {
+  const logTimestamps = async (
+    saleContract: AtlantisWorldAlphaSale,
+    metadata?: any
+  ) => {
     const [_startSaleBlockTimestamp, _stopSaleBlockTimestamp] =
       await Promise.all([
         saleContract.startSaleBlockTimestamp(),
