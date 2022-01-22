@@ -225,9 +225,19 @@ async function main() {
     ]);
 
   console.log(`\n\n\n✅ The smart contracts have been deployed successfully!`, {
-    saleContractOwner,
-    keyContractOwner,
-    scrollContractOwner,
+    SaleContract: {
+      address: saleContract.address,
+      owner: saleContractOwner,
+    },
+    KeyContract: {
+      address: keyContract.address,
+      owner: keyContractOwner,
+    },
+    ScrollContract: {
+      proxyAddress: scrollContract.address,
+      implementationAddress: scrollContractImplementation.address,
+      owner: scrollContractOwner,
+    },
   });
 
   const network = polygonMainnetReady ? "polygon" : "mumbai";
