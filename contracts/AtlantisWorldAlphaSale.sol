@@ -474,8 +474,25 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
     emit NewScrollAddress(_address);
   }
 
+  /// @notice Safety function to set the WETH Contract Address
   function setWETHAddress(address _address) external onlyOwner {
     WETH = IERC20(_address);
+  }
+
+  /// @notice Set the sale start time
+  function setStartTime(uint256 _startTimeStamp) external onlyOwner {
+    require(_startTimeStamp >= block.timestamp, "Invalid start date");
+    startSaleBlockTimestamp = _startTimeStamp;
+  }
+
+  /// @notice Set the sale end time
+  function setEndTime(uint256 _stopTimeStamp) external onlyOwner {
+    require(
+      _stopTimeStamp >= block.timestamp &&
+        _stopTimeStamp > startSaleBlockTimestamp,
+      "Invalid stop date"
+    );
+    stopSaleBlockTimestamp = _stopTimeStamp;
   }
 
   // ***************
