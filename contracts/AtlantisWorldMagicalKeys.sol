@@ -10,6 +10,73 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "./@eip2981/ERC2981ContractWideRoyalties.sol";
 
 /**
+ * ▄▀█ ▀█▀ █░░ ▄▀█ █▄░█ ▀█▀ █ █▀   █░█░█ █▀█ █▀█ █░░ █▀▄
+ * █▀█ ░█░ █▄▄ █▀█ █░▀█ ░█░ █ ▄█   ▀▄▀▄▀ █▄█ █▀▄ █▄▄ █▄▀
+ *
+ *
+ * Atlantis World is building the Web3 social metaverse by connecting Web3 with social, 
+ * gaming and education in one lightweight virtual world that's accessible to everybody.
+ *
+ * # CJ Hetherington
+ * 
+ * “I’m forever a man indebted to the great and fantastically talented builders 
+ * beside me here that have made Atlantis World an (almost) reality. As I look 
+ * back on the moments that have shaped me as the years have gone by, I’ve never 
+ * been so transformed by the magic felt as I joined hands and minds with Rev, Julio, 
+ * Ilayda, Austyn, Rachit, Carlo, Chris and Eylul. I love you all folks, it’s great 
+ * to be learning and growing whilst cultivating this movement all together. 
+ * We’re just getting started, this is just the beginning, and it’s time to reach 
+ * terminal velocity. It’s going to be a wild ride, so strap in. Let’s do everything 
+ * in our power to always over deliver and never let down those who have supported us 
+ * and will continue to. Greatness depends on what we do next. Let’s DAO it, frens!”
+ *
+ * # Rev Miller
+ * 
+ * “Living in a world of prosperity, freedom, and joy - the world that’s true to your 
+ * beliefs and values, the world that creates abundance for everyone involved and helps 
+ * those in need. the world where kindness, integrity, intelligence, and energy are met. 
+ * The world of constant exploration, experimentation, and growth. that’s the world most 
+ * of us want to live in, the world we want to grow and build for future generations. All 
+ * while being whoever we wanted to be, contributing to something bigger than ourselves, 
+ * and giving it everything we’ve got. that’s the world we’re building together - with the team, 
+ * the community, our whole family behind Atlantis World - the world we all deserve.”
+ *
+ * # Julio Alcantara
+ *
+ * “We all come from different walks of life and think we cannot do great things. But 
+ * adventure is just waiting out there for anyone. You just need to stay positive and 
+ * look for youir moment. When that time comes, you better be ready to give it your all. 
+ * Alone we are but droplets, but together we are an endless Ocean!”
+ *
+ * # Ilayda Pinarbasi
+ *
+ * “Success is getting what you want. Happiness is wanting what you get. I am sure that we 
+ * will get the happines. With this team, community and destination that we have, it is 
+ * predictable. I am always grateful for being part of Atlantis World. We have just started, wagmi!”
+ * 
+ * # Rachit Srivastava
+ *
+ * “"Let us step into the night and pursue that flighty temptress, adventure". - J.K Rowling 
+ *  Metaverse is the future of technology, and I see Atlantis world to be the among the core project 
+ *  in the space. WAGMI!” 
+ *
+ * # Austyn Studdard
+ *
+ * “...”
+ * 
+ * # Chris Diperio
+ *
+ * “It has been such a pleasure to be a part of this amazing project and even more amazing team. WAGMI!”
+ *
+ * # Carlo Miguel Dy
+ *
+ * “We're building together for the decentralized future at Atlantis World, WAGMI frens!”
+ *
+ * # Eylul Civelek
+ *
+ * “Atlantis World is such a rare kind of project to work on. I couldn't have asked for a better team to 
+ * be part of. We were born to make history together!”
+ *
  * @title Atlantis World Magical Keys contract, for managing the behaviour of ERC721 keys
  * @author Rachit Anand Srivastava, Carlo Miguel Dy
  * @notice Contract is used for tracking the keys claimed. These are non transferable erc721 contracts.
