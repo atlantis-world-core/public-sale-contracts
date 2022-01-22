@@ -1,9 +1,11 @@
-# Atlantis Worls Club Sale
+# Atlantis World Scrolls
 
-### Architecture
+![Atlantis World Sale Background Artwork 2021 by Ilayda](bg.png)
 
-- The club sale contract mints the Key Tokens during the sale.
-- After the sale, when the scroll reveal takes place, the contract burns the key and mint the same TokenId Scroll to the User.
+### ARCHITECTURE
+
+- The sale contract mints the Key Tokens during the sale.
+- After the sale, when the scroll reveal takes place, the contract burns the key and mint the Scroll to the User.
 
 ### INSTALLATION
 
@@ -46,6 +48,16 @@ Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_
 npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
 ```
 
-### Performance optimizations
+### Contract Addresses
 
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
+##### Sale Contract
+
+    0xf4d05f08Edd9Fb32Fe830C5DA65D9B1a848247B3
+
+##### Key Contract
+
+    0x92e802562CE2E2B17640Af97247a9Bb0eb5FE949
+
+##### Scroll Contract
+
+    0xf8583c1E7455AFAfd109d56D9fCE2716E1fa498f
