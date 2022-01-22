@@ -24,8 +24,6 @@ const WETH_ADDRESS = polygonMainnetReady
 
 const MAGICAL_KEY_TOKEN_URI =
   "bafkreiazuxyn63ipunrfwq3hbmb6mmzj7etnytf2ylz7wekhddofhwia3a";
-const FOUNDING_ATLANTEAN_SCROLL_TOKEN_URI =
-  "bafkreifdhppobduk56jk6o3tc6vzvnvjjpqrggpxyhx6czwxswzd67koci";
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
@@ -58,16 +56,6 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
 
-  // let WETH_ADDRESS = process.env.WETH; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
-
-  // if (!WETH_ADDRESS) {
-  //   const wethContract = await ethers.getContractFactory("MockWETH");
-  //   const wethContractDeploy = await wethContract.deploy();
-  //   WETH_ADDRESS = wethContractDeploy.address;
-  //   wethContractDeploy
-  //     .connect(deployer)
-  //     .mint(deployer.address, "200000000000000000000000000000");
-  // }
   console.log("Deploying contracts 📜...\n");
 
   const {
@@ -223,8 +211,18 @@ async function main() {
     scrollContractImplementation.address
   );
   await saleContract.setScrollAddress(scrollContract.address);
-  await scrollContract.setAdvisoryTokenURI(FOUNDING_ATLANTEAN_SCROLL_TOKEN_URI);
-  await scrollContract.setPublicTokenURI(FOUNDING_ATLANTEAN_SCROLL_TOKEN_URI);
+  await scrollContract.setAdvisoryCIDs([
+    "bafkreiaccnxtacs27cektc3sspomatpnbuac6blhpgajyfwel4qixpz2ha", // AER
+    "bafkreic53az2tk76kuc5b5hevou2jydbbv63iywjh7znodza7c4c2ulrgy", // AQUA
+    "bafkreihk722vzq4idnls2ezgdijdlvysvrrkwe4eoqpa5y4mj2d2z5kb2e", // IGNIS
+    "bafkreihortge6gn4kreqfcwzknfzzrxcxr6wh5s4l67rlv3257cnrv6gvu", // TERRA
+  ]);
+  await scrollContract.setPublicCIDs([
+    "bafkreigtt2j3augp52zyqowwy5yzh5eni7hmgkanxnl5kon25tze7sgiai", // AER
+    "bafkreiccqbovqzk6prmfrb45wdbum5k2zp7mnwo4kbxss3gmmjwxottjoq", // AQUA
+    "bafkreihy2ds553wvpp6ndnnnchlamh2w6zixgtujtuo3zqbyv5md7i2as4", // IGNIS
+    "bafkreiekre5bqd3mixahiktnj7oxzx36rfzyx7e6bjiaswmxysoeq4nory", // TERRA
+  ]);
 
   const [saleContractOwner, keyContractOwner, scrollContractOwner] =
     await Promise.all([
