@@ -23,7 +23,7 @@ const WETH_ADDRESS = polygonMainnetReady
   : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
 
 const MAGICAL_KEY_TOKEN_URI =
-  "bafkreiazuxyn63ipunrfwq3hbmb6mmzj7etnytf2ylz7wekhddofhwia3a";
+  "bafkreief2sxcsudbhr6dtzaxdjdoryu52nq6pxjuhvov6u7siexob7mqba";
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
   ? JAN_22_START_SALE_TIMESTAMP
