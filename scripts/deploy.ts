@@ -5,6 +5,7 @@ import {
   JAN_22_END_SALE_TIMESTAMP,
   JAN_22_START_SALE_TIMESTAMP,
 } from "../utils";
+import { AtlantisWorldFoundingAtlanteanScrolls } from "../typechain";
 
 dotenv.config();
 
@@ -21,9 +22,9 @@ const WETH_ADDRESS = polygonMainnetReady
   ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
   : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
 
-const MAGICAL_KEY_CID =
+const MAGICAL_KEY_TOKEN_URI =
   "bafybeieqybu57sr3alxl6n7rrge3yfwzqwv4pghmirm35aedclt7poav7y";
-const FOUNDING_ATLANTEAN_SCROLL_CID =
+const FOUNDING_ATLANTEAN_SCROLL_TOKEN_URI =
   "bafybeievwhkikv5xny6u7fvonbmhzrh6rpqystkcd4bfwgvbh7cbesxawy";
 
 const START_SALE_TIMESTAMP = polygonMainnetReady
@@ -197,18 +198,18 @@ async function main() {
     keyContract.address
   );
   await saleContract.setKeysAddress(keyContract.address);
-  await keyContract.setMagicalKeyTokenURI(MAGICAL_KEY_CID);
+  await keyContract.setMagicalKeyTokenURI(MAGICAL_KEY_TOKEN_URI);
 
   // Scroll proxy contract
   const ScrollProxyContract = await ethers.getContractFactory(
     "AtlantisWorldFoundingAtlanteanScrolls"
   );
   const scrollContractImplementation = await ScrollProxyContract.deploy();
-  const scrollContract = await upgrades.deployProxy(
+  const scrollContract = (await upgrades.deployProxy(
     ScrollProxyContract,
     [saleContract.address],
     { initializer: "initialize" }
-  );
+  )) as AtlantisWorldFoundingAtlanteanScrolls;
   console.info(
     `\n[ScrollProxyContract] transaction hash`,
     scrollContract.deployTransaction.hash
@@ -222,6 +223,8 @@ async function main() {
     scrollContractImplementation.address
   );
   await saleContract.setScrollAddress(scrollContract.address);
+  await scrollContract.setAdvisoryTokenURI(FOUNDING_ATLANTEAN_SCROLL_TOKEN_URI);
+  await scrollContract.setPublicTokenURI(FOUNDING_ATLANTEAN_SCROLL_TOKEN_URI);
 
   const [saleContractOwner, keyContractOwner, scrollContractOwner] =
     await Promise.all([
