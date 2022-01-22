@@ -214,16 +214,16 @@ async function main() {
   );
   await saleContract.setScrollAddress(scrollContractImplementation.address);
   await scrollContractImplementation.setAdvisoryCIDs([
-    "bafkreibiuvhqbiqkrc2xaadi2oyz6srko44qnwa2k6dxza2c4l6d4egxx4", // AER
-    "bafkreigsfc5k43gi4lephddxjfst44vc2eerocgua7wa2vuenjyu2kn5km", // AQUA
-    "bafkreia22df3bljtrrclz7okex6znj24bark2wsu4gluttuolwwj4bqzge", // IGNIS
-    "bafkreigtd4xmjfjdtrdijan7eapjowulfidhajx3jk2gxh47klptysx3m4", // TERRA
+    "bafkreic34stowpa7nyti7rod7kqx7big5yyy7pj2n545dwfhb6ssyqdnfy", // AER
+    "bafkreif5axl5schzc37rbnbm5ncg5jcqnmozwphsam7iesabsxxobnzfni", // AQUA
+    "bafkreih3fgctrvxrj3hpyuyn3qm6jfd2h3royhqxmxlpeev7b3qa3ujnnu", // IGNIS
+    "bafkreigshxytnwu5fpjenzvoy44jvnppjqnhxrb7vinejhhrihpl2vbkca", // TERRA
   ]);
   await scrollContractImplementation.setPublicCIDs([
-    "bafkreifkdiehuzzx64pwyncslmxe3kob4ttbmcferza4v6sitibwroghyu", // AER
-    "bafkreic52zlo4c3yk2krkipcs4wred36rgjhjxjacrr65scrqjopj6kpjm", // AQUA
-    "bafkreibnjszilxxaysxu3zw4ohtu3edu2ogfyqz36w53v5gf7hvtj3lfxm", // IGNIS
-    "bafkreicfotdft4yonoa2g7twhb2kcmjc5i7g5d2i4l7hthx24ntoijeuzy", // TERRA
+    "bafkreih4arqhfqcliirooxwyhoma2e67mrocbha4zzthmsmhcmc4z7dmc4", // AER
+    "bafkreifwiomxfhiyvgyefx6p3se3ihxvhdlmbi5jw5eei24fpdx4wehxam", // AQUA
+    "bafkreig7rjwlxusikwfvyz5zhu2ldk2qfhnxnu6xrqmew46jgwv4sqv56y", // IGNIS
+    "bafkreidasah65ts5j3kc7otev7x2fymfvdtwksezjwgmruwujbyqdqlpbe", // TERRA
   ]);
 
   const [saleContractOwner, keyContractOwner, scrollContractOwner] =

@@ -51,7 +51,9 @@ import {IAtlantisWorldFoundingAtlanteanScrolls} from "./interface/IAtlantisWorld
  *
  * # Ilayda Pinarbasi
  *
- * “...”
+ * “Success is getting what you want. Happiness is wanting what you get. I am sure that we 
+ * will get the happines. With this team, community and destination that we have, it is 
+ * predictable. I am always grateful for being part of Atlantis World. We have just started, wagmi!”
  * 
  * # Rachit Srivastava
  *
@@ -65,11 +67,11 @@ import {IAtlantisWorldFoundingAtlanteanScrolls} from "./interface/IAtlantisWorld
  * 
  * # Chris Diperio
  *
- * “...”
+ * “It has been such a pleasure to be a part of this amazing project and even more amazing team. WAGMI!”
  *
  * # Carlo Miguel Dy
  *
- * “We're building together for the decentralized future!”
+ * “We're building together for the decentralized future at Atlantis World, WAGMI frens!”
  *
  * # Eylul Civelek
  *
