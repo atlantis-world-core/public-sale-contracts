@@ -11,6 +11,46 @@ import {IAtlantisWorldMagicalKeys} from "./interface/IAtlantisWorldMagicalKeys.s
 import {IAtlantisWorldFoundingAtlanteanScrolls} from "./interface/IAtlantisWorldFoundingAtlanteanScrolls.sol";
 
 /**
+ * ▄▀█ ▀█▀ █░░ ▄▀█ █▄░█ ▀█▀ █ █▀   █░█░█ █▀█ █▀█ █░░ █▀▄
+ * █▀█ ░█░ █▄▄ █▀█ █░▀█ ░█░ █ ▄█   ▀▄▀▄▀ █▄█ █▀▄ █▄▄ █▄▀
+ *
+ * Atlantis World is building the Web3 social metaverse by connecting Web3 with social, 
+ * gaming and education in one lightweight virtual world that's accessible to everybody.
+ *
+ * # CJ Hetherington
+ * 
+ * I’m forever a man indebted to the great and fantastically talented builders 
+ * beside me here that have made Atlantis World an (almost) reality. As I look 
+ * back on the moments that have shaped me as the years have gone by, I’ve never 
+ * been so transformed by the magic felt as I joined hands and minds with Rev, Julio, 
+ * Ilayda, Austyn, Rachit, Carlo, Chris and Eylul. I love you all folks, it’s great 
+ * to be learning and growing whilst cultivating this movement all together. 
+ * We’re just getting started, this is just the beginning, and it’s time to reach 
+ * terminal velocity. It’s going to be a wild ride, so strap in. Let’s do everything 
+ * in our power to always over deliver and never let down those who have supported us 
+ * and will continue to. Greatness depends on what we do next. Let’s DAO it, frens!
+ *
+ * # Rev Miller
+ *
+ * # Julio Alcantara
+ * We all come from different walks of life and think we cannot do great things. But 
+ * adventure is just waiting out there for anyone. You just need to stay positive and 
+ * look for youir moment. When that time comes, you better be ready to give it your all. 
+ * Alone we are but droplets, but together we are an endless Ocean! 
+ *
+ * # Ilayda Pinarbasi
+ *
+ * # Rachit Srivastava
+ *
+ * # Austyn Studdard
+ *
+ * # Chris Diperio
+ *
+ * # Carlo Miguel Dy
+ *
+ * # Eylul Civelek
+ *
+ *
  * @title Atlantis World Alpha Sale contract, a controller for the entire club sale
  * @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
  * @author Rachit Anand Srivastava, Carlo Miguel Dy
