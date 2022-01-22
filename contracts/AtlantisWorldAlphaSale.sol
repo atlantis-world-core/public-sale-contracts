@@ -352,7 +352,7 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
    * @notice To swap the key for scroll on reveal
    */
   function sellKeyForScroll(uint256 _tokenId)
-    external
+    public
     nonReentrant
     whenNotPaused
   {
@@ -366,24 +366,41 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
   }
 
   /**
-   * @notice Minting unminted tokens to treasury
+   * @notice Minting unminted advisory tokens to treasury
    * @dev EIP2309 hasn't been implemented due to lack of clarity on implementation. The EIP only specifies the event, not the implementation.
    * @param _treasuryAddress The treasury address for Atlantis World
    */
-  function mintLeftOvers(address _treasuryAddress)
+  function mintLeftOversAdvisoryKeys(address _treasuryAddress)
     external
     onlyOwner
     whenNotPaused
   {
-    for (
-      uint256 i = 0;
-      i < TOTAL_SUPPLY - (publicKeyMintCount + advisoryKeyLimitCount);
-      i++
-    ) _magicalkeysContract.mintKeyToUser(_treasuryAddress);
+    require(
+      _treasuryAddress != address(0),
+      "The assigned address is an empty address."
+    );
+    require(advisoryKeyLimitCount <= ADVISORY_KEY_LIMIT);
+    advisoryKeyLimitCount++;
+    _magicalkeysContract.mintKeyToUser(_treasuryAddress);
+  }
 
-    _advisoryAddressToClaimed[_treasuryAddress] = true;
-    publicKeyMintCount = PUBLIC_KEY_LIMIT;
-    advisoryKeyLimitCount = ADVISORY_KEY_LIMIT;
+  /**
+   * @notice Minting unminted public tokens to treasury
+   * @dev EIP2309 hasn't been implemented due to lack of clarity on implementation. The EIP only specifies the event, not the implementation.
+   * @param _treasuryAddress The treasury address for Atlantis World
+   */
+  function mintLeftOversPublicKeys(address _treasuryAddress)
+    external
+    onlyOwner
+    whenNotPaused
+  {
+    require(
+      _treasuryAddress != address(0),
+      "The assigned address is an empty address."
+    );
+    require(publicKeyMintCount <= PUBLIC_KEY_LIMIT);
+    publicKeyMintCount++;
+    _magicalkeysContract.mintKeyToUser(_treasuryAddress);
   }
 
   /// @notice to generate the hash using the nonce and the msg.sender
