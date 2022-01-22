@@ -1,12 +1,11 @@
 // SPDX-License-Identifier:  GNU General Public License v3.0
 pragma solidity ^0.8.10;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./@eip2981/ERC2981ContractWideRoyalties.sol";
 import "./interface/IAtlantisWorldFoundingAtlanteanScrolls.sol";
@@ -14,33 +13,25 @@ import "./lib/impl/RoyaltiesV2Impl.sol";
 import "./lib/LibPart.sol";
 import "./lib/LibRoyaltiesV2.sol";
 
-/// @title Atlantis World Founding Atlantean Scrolls contract, for managing the behaviour of ERC721 Scroll.
-/// @notice Contract is used for tracking the Scrolls claimed.
-/// @author Rachit Anand Srivastava, Carlo Miguel Dy
-/// @dev the contract is made upgradaeble using OpenZeppelin Upgadaeble Library
+/**
+ * @title Atlantis World Founding Atlantean Scrolls contract, for managing the behaviour of ERC721 Scroll.
+ * @notice Contract is used for tracking the Scrolls claimed.
+ * @author Rachit Anand Srivastava, Carlo Miguel Dy
+ * @dev the contract is made upgradaeble using OpenZeppelin Upgadaeble Library
+ */
 contract AtlantisWorldFoundingAtlanteanScrolls is
   IAtlantisWorldFoundingAtlanteanScrolls,
-  ERC721EnumerableUpgradeable,
-  ERC721URIStorageUpgradeable,
-  AccessControlUpgradeable,
-  OwnableUpgradeable,
+  ERC721Enumerable,
+  ERC721URIStorage,
+  AccessControl,
+  Ownable,
   RoyaltiesV2Impl,
-  ReentrancyGuardUpgradeable,
+  ReentrancyGuard,
   ERC2981ContractWideRoyalties
 {
   using Counters for Counters.Counter;
 
   bytes32 public constant SALE_CONTRACT_ROLE = keccak256("SALE");
-
-  /**
-   * @dev The advisory tokenURI metadata CID
-   */
-  string public advisoryTokenURI;
-
-  /**
-   * @dev The public tokenURI metadata CID
-   */
-  string public publicTokenURI;
 
   /**
    * @notice The current mint count
@@ -77,6 +68,10 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
    */
   mapping(uint256 => bool) private _tokenIdToPublicMint;
 
+  string[4] private _advisoryCIDs;
+
+  string[4] private _publicCIDs;
+
   event UpdatedRoyalties(address newRoyaltyAddress, uint256 newPercentage);
 
   /**
@@ -84,16 +79,24 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
    */
   event ScrollMinted(address user);
 
+  constructor() ERC721("Atlantis World: Founding Atlantean Scrolls", "AWFAS") {}
+
   /**
    * @dev On initialize, it sets up the address of the deployed Sale contract
    * @param _saleContract The address of the deployed Sale contract
    */
-  function initialize(address _saleContract) public initializer {
+  function initialize(address _saleContract) {
     _setupRole(SALE_CONTRACT_ROLE, _saleContract);
     _setRoleAdmin(SALE_CONTRACT_ROLE, DEFAULT_ADMIN_ROLE);
-    __ERC721_init("Atlantis World: Founding Atlantean Scrolls", "AWFAS");
-    __Ownable_init();
     _setRoyalties(msg.sender, 7500);
+  }
+
+  function setAdvisoryCIDs(string[4] memory _uris) external onlyOwner {
+    _advisoryCIDs = _uris;
+  }
+
+  function setPublicCIDs(string[4] memory _uris) external onlyOwner {
+    _publicCIDs = _uris;
   }
 
   /**
@@ -147,26 +150,6 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
   }
 
   /**
-   * @dev Set the `advisoryTokenURI`
-   */
-  function setAdvisoryTokenURI(string calldata _advisoryTokenURI)
-    external
-    onlyOwner
-  {
-    advisoryTokenURI = _advisoryTokenURI;
-  }
-
-  /**
-   * @dev Set the `publicTokenURI`
-   */
-  function setPublicTokenURI(string calldata _publicTokenURI)
-    external
-    onlyOwner
-  {
-    publicTokenURI = _publicTokenURI;
-  }
-
-  /**
    * @dev Get the current mint count.
    */
   function getTotalMintCount() external view returns (uint256) {
@@ -184,22 +167,24 @@ contract AtlantisWorldFoundingAtlanteanScrolls is
   {
     require(address(0x0) != _user, "Must not be an empty address");
 
+    uint256 guildId = block.timestamp % 4;
+    string memory guildTokenURI;
+
     _tokenIds.increment();
     uint256 currentTokenId = _tokenIds.current();
 
     if (isAdvisoryMinter) {
       _advisoryTokenIds.push(currentTokenId);
       _tokenIdToAdvisoryMint[currentTokenId] = true;
+      guildTokenURI = _advisoryCIDs[guildId];
     } else {
       _publicTokenIds.push(currentTokenId);
       _tokenIdToPublicMint[currentTokenId] = true;
+      guildTokenURI = _publicCIDs[guildId];
     }
 
     _safeMint(_user, currentTokenId);
-    _setTokenURI(
-      currentTokenId,
-      isAdvisoryMinter ? advisoryTokenURI : publicTokenURI
-    );
+    _setTokenURI(currentTokenId, guildTokenURI);
 
     emit ScrollMinted(_user);
   }

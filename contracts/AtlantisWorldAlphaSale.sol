@@ -11,6 +11,72 @@ import {IAtlantisWorldMagicalKeys} from "./interface/IAtlantisWorldMagicalKeys.s
 import {IAtlantisWorldFoundingAtlanteanScrolls} from "./interface/IAtlantisWorldFoundingAtlanteanScrolls.sol";
 
 /**
+ * ▄▀█ ▀█▀ █░░ ▄▀█ █▄░█ ▀█▀ █ █▀   █░█░█ █▀█ █▀█ █░░ █▀▄
+ * █▀█ ░█░ █▄▄ █▀█ █░▀█ ░█░ █ ▄█   ▀▄▀▄▀ █▄█ █▀▄ █▄▄ █▄▀
+ *
+ *
+ * Atlantis World is building the Web3 social metaverse by connecting Web3 with social, 
+ * gaming and education in one lightweight virtual world that's accessible to everybody.
+ *
+ * # CJ Hetherington
+ * 
+ * “I’m forever a man indebted to the great and fantastically talented builders 
+ * beside me here that have made Atlantis World an (almost) reality. As I look 
+ * back on the moments that have shaped me as the years have gone by, I’ve never 
+ * been so transformed by the magic felt as I joined hands and minds with Rev, Julio, 
+ * Ilayda, Austyn, Rachit, Carlo, Chris and Eylul. I love you all folks, it’s great 
+ * to be learning and growing whilst cultivating this movement all together. 
+ * We’re just getting started, this is just the beginning, and it’s time to reach 
+ * terminal velocity. It’s going to be a wild ride, so strap in. Let’s do everything 
+ * in our power to always over deliver and never let down those who have supported us 
+ * and will continue to. Greatness depends on what we do next. Let’s DAO it, frens!”
+ *
+ * # Rev Miller
+ * 
+ * “Living in a world of prosperity, freedom, and joy - the world that’s true to your 
+ * beliefs and values, the world that creates abundance for everyone involved and helps 
+ * those in need. the world where kindness, integrity, intelligence, and energy are met. 
+ * The world of constant exploration, experimentation, and growth. that’s the world most 
+ * of us want to live in, the world we want to grow and build for future generations. All 
+ * while being whoever we wanted to be, contributing to something bigger than ourselves, 
+ * and giving it everything we’ve got. that’s the world we’re building together - with the team, 
+ * the community, our whole family behind Atlantis World - the world we all deserve.”
+ *
+ * # Julio Alcantara
+ *
+ * “We all come from different walks of life and think we cannot do great things. But 
+ * adventure is just waiting out there for anyone. You just need to stay positive and 
+ * look for youir moment. When that time comes, you better be ready to give it your all. 
+ * Alone we are but droplets, but together we are an endless Ocean!”
+ *
+ * # Ilayda Pinarbasi
+ *
+ * “...”
+ * 
+ * # Rachit Srivastava
+ *
+ * “"Let us step into the night and pursue that flighty temptress, adventure". - J.K Rowling 
+ *  Metaverse is the future of technology, and I see Atlantis world to be the among the core project 
+ *  in the space. WAGMI!” 
+ *
+ * # Austyn Studdard
+ *
+ * “...”
+ * 
+ * # Chris Diperio
+ *
+ * “...”
+ *
+ * # Carlo Miguel Dy
+ *
+ * “We're building together for the decentralized future!”
+ *
+ * # Eylul Civelek
+ *
+ * “Atlantis World is such a rare kind of project to work on. I couldn't have asked for a better team to 
+ * be part of. We were born to make history together!”
+ *
+ *
  * @title Atlantis World Alpha Sale contract, a controller for the entire club sale
  * @notice Contract can be used for the claiming the keys for Atlantis World, and redeeming the keys for scrolls later
  * @author Rachit Anand Srivastava, Carlo Miguel Dy
@@ -116,6 +182,18 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
 
   /// @notice When a new advisory merkle root is set
   event NewAdvisoryMerkleRootSet(uint256 indexed timestamp);
+
+  /// @notice When a left over public magical key gets minted to `treasuryAddress`
+  event MintLeftOverPublicMagicalKey(address indexed treasuryAddress);
+
+  /// @notice When a left over advisory magical key gets minted to `treasuryAddress`
+  event MintLeftOverAdvisoryMagicalKey(address indexed treasuryAddress);
+
+  /// @notice When a new start timestamp is added
+  event NewStartTime(uint256 indexed timestamp);
+
+  /// @notice When a new end timestamp is added
+  event NewEndTime(uint256 indexed timestamp);
 
   /**
    * @param _whitelistMerkleRoot The merkle root of whitelisted candidates
@@ -352,7 +430,7 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
    * @notice To swap the key for scroll on reveal
    */
   function sellKeyForScroll(uint256 _tokenId)
-    external
+    public
     nonReentrant
     whenNotPaused
   {
@@ -366,24 +444,49 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
   }
 
   /**
-   * @notice Minting unminted tokens to treasury
+   * @notice Minting unminted advisory tokens to treasury
    * @dev EIP2309 hasn't been implemented due to lack of clarity on implementation. The EIP only specifies the event, not the implementation.
    * @param _treasuryAddress The treasury address for Atlantis World
    */
-  function mintLeftOvers(address _treasuryAddress)
+  function mintLeftOverAdvisoryKey(address _treasuryAddress)
     external
     onlyOwner
     whenNotPaused
   {
-    for (
-      uint256 i = 0;
-      i < TOTAL_SUPPLY - (publicKeyMintCount + advisoryKeyLimitCount);
-      i++
-    ) _magicalkeysContract.mintKeyToUser(_treasuryAddress);
+    require(
+      _treasuryAddress != address(0),
+      "The assigned address is an empty address."
+    );
+    require(advisoryKeyLimitCount <= ADVISORY_KEY_LIMIT);
 
-    _advisoryAddressToClaimed[_treasuryAddress] = true;
-    publicKeyMintCount = PUBLIC_KEY_LIMIT;
-    advisoryKeyLimitCount = ADVISORY_KEY_LIMIT;
+    advisoryKeyLimitCount++;
+
+    _magicalkeysContract.mintKeyToUser(_treasuryAddress);
+
+    emit MintLeftOverAdvisoryMagicalKey(_treasuryAddress);
+  }
+
+  /**
+   * @notice Minting unminted public tokens to treasury
+   * @dev EIP2309 hasn't been implemented due to lack of clarity on implementation. The EIP only specifies the event, not the implementation.
+   * @param _treasuryAddress The treasury address for Atlantis World
+   */
+  function mintLeftOverPublicKey(address _treasuryAddress)
+    external
+    onlyOwner
+    whenNotPaused
+  {
+    require(
+      _treasuryAddress != address(0),
+      "The assigned address is an empty address."
+    );
+    require(publicKeyMintCount <= PUBLIC_KEY_LIMIT);
+
+    publicKeyMintCount++;
+
+    _magicalkeysContract.mintKeyToUser(_treasuryAddress);
+
+    emit MintLeftOverPublicMagicalKey(_treasuryAddress);
   }
 
   /// @notice to generate the hash using the nonce and the msg.sender
@@ -457,8 +560,31 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
     emit NewScrollAddress(_address);
   }
 
+  /// @notice Safety function to set the WETH Contract Address
   function setWETHAddress(address _address) external onlyOwner {
     WETH = IERC20(_address);
+  }
+
+  /// @notice Set the sale start time
+  function setStartTime(uint256 _startTimeStamp) external onlyOwner {
+    require(_startTimeStamp >= block.timestamp, "Invalid start date");
+
+    startSaleBlockTimestamp = _startTimeStamp;
+
+    emit NewStartTime(_startTimeStamp);
+  }
+
+  /// @notice Set the sale end time
+  function setEndTime(uint256 _stopTimeStamp) external onlyOwner {
+    require(
+      _stopTimeStamp >= block.timestamp &&
+        _stopTimeStamp > startSaleBlockTimestamp,
+      "Invalid stop date"
+    );
+
+    stopSaleBlockTimestamp = _stopTimeStamp;
+
+    emit NewEndTime(_stopTimeStamp);
   }
 
   // ***************
@@ -498,10 +624,6 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
       "The assigned address is an empty address."
     );
 
-    WETH.transferFrom(
-      address(this),
-      targetAddress,
-      WETH.balanceOf(address(this))
-    );
+    WETH.transfer(targetAddress, WETH.balanceOf(address(this)));
   }
 }

@@ -19,21 +19,15 @@ const networkName =
 
 // WETH address
 const WETH_ADDRESS = polygonMainnetReady
-  ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
+  ? "0x4f2215ed36ca6b5c0b1dc747bc3cfe8e64f6ef0c" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
   : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
 
 const MAGICAL_KEY_TOKEN_URI =
   "bafkreiazuxyn63ipunrfwq3hbmb6mmzj7etnytf2ylz7wekhddofhwia3a";
-const FOUNDING_ATLANTEAN_SCROLL_TOKEN_URI =
-  "bafkreifdhppobduk56jk6o3tc6vzvnvjjpqrggpxyhx6czwxswzd67koci";
 
-const START_SALE_TIMESTAMP = polygonMainnetReady
-  ? JAN_22_START_SALE_TIMESTAMP
-  : 1642821948;
+const START_SALE_TIMESTAMP = 1642874700;
 
-const END_SALE_TIMESTAMP = polygonMainnetReady
-  ? JAN_22_END_SALE_TIMESTAMP
-  : 1642822248;
+const END_SALE_TIMESTAMP = 1642876200;
 
 const ADVISORY_WHITELIST_MERKLE_ROOT =
   "0xd446bbf399b8a0f6fa4a4ca69e33eca42e860070f9182eb21a1366841bd8962d";
@@ -58,16 +52,6 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
 
-  // let WETH_ADDRESS = process.env.WETH; // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
-
-  // if (!WETH_ADDRESS) {
-  //   const wethContract = await ethers.getContractFactory("MockWETH");
-  //   const wethContractDeploy = await wethContract.deploy();
-  //   WETH_ADDRESS = wethContractDeploy.address;
-  //   wethContractDeploy
-  //     .connect(deployer)
-  //     .mint(deployer.address, "200000000000000000000000000000");
-  // }
   console.log("Deploying contracts 📜...\n");
 
   const {
@@ -223,8 +207,18 @@ async function main() {
     scrollContractImplementation.address
   );
   await saleContract.setScrollAddress(scrollContract.address);
-  await scrollContract.setAdvisoryTokenURI(FOUNDING_ATLANTEAN_SCROLL_TOKEN_URI);
-  await scrollContract.setPublicTokenURI(FOUNDING_ATLANTEAN_SCROLL_TOKEN_URI);
+  await scrollContract.setAdvisoryCIDs([
+    "bafkreibiuvhqbiqkrc2xaadi2oyz6srko44qnwa2k6dxza2c4l6d4egxx4", // AER
+    "bafkreigsfc5k43gi4lephddxjfst44vc2eerocgua7wa2vuenjyu2kn5km", // AQUA
+    "bafkreia22df3bljtrrclz7okex6znj24bark2wsu4gluttuolwwj4bqzge", // IGNIS
+    "bafkreigtd4xmjfjdtrdijan7eapjowulfidhajx3jk2gxh47klptysx3m4", // TERRA
+  ]);
+  await scrollContract.setPublicCIDs([
+    "bafkreifkdiehuzzx64pwyncslmxe3kob4ttbmcferza4v6sitibwroghyu", // AER
+    "bafkreic52zlo4c3yk2krkipcs4wred36rgjhjxjacrr65scrqjopj6kpjm", // AQUA
+    "bafkreibnjszilxxaysxu3zw4ohtu3edu2ogfyqz36w53v5gf7hvtj3lfxm", // IGNIS
+    "bafkreicfotdft4yonoa2g7twhb2kcmjc5i7g5d2i4l7hthx24ntoijeuzy", // TERRA
+  ]);
 
   const [saleContractOwner, keyContractOwner, scrollContractOwner] =
     await Promise.all([
