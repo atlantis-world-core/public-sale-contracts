@@ -123,6 +123,12 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
   /// @notice When a left over advisory magical key gets minted to `treasuryAddress`
   event MintLeftOverAdvisoryMagicalKey(address indexed treasuryAddress);
 
+  /// @notice When a new start timestamp is added
+  event NewStartTime(uint256 indexed timestamp);
+
+  /// @notice When a new end timestamp is added
+  event NewEndTime(uint256 indexed timestamp);
+
   /**
    * @param _whitelistMerkleRoot The merkle root of whitelisted candidates
    * @param _advisorMerkleRoot The merkle root of advisor addresses
@@ -496,7 +502,10 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
   /// @notice Set the sale start time
   function setStartTime(uint256 _startTimeStamp) external onlyOwner {
     require(_startTimeStamp >= block.timestamp, "Invalid start date");
+
     startSaleBlockTimestamp = _startTimeStamp;
+
+    emit NewStartTime(_startTimeStamp);
   }
 
   /// @notice Set the sale end time
@@ -506,7 +515,10 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
         _stopTimeStamp > startSaleBlockTimestamp,
       "Invalid stop date"
     );
+
     stopSaleBlockTimestamp = _stopTimeStamp;
+
+    emit NewEndTime(_stopTimeStamp);
   }
 
   // ***************
