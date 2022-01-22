@@ -33,7 +33,14 @@ import {IAtlantisWorldFoundingAtlanteanScrolls} from "./interface/IAtlantisWorld
  *
  * # Rev Miller
  * 
- * “...”
+ * “Living in a world of prosperity, freedom, and joy - the world that’s true to your 
+ * beliefs and values, the world that creates abundance for everyone involved and helps 
+ * those in need. the world where kindness, integrity, intelligence, and energy are met. 
+ * The world of constant exploration, experimentation, and growth. that’s the world most 
+ * of us want to live in, the world we want to grow and build for future generations. All 
+ * while being whoever we wanted to be, contributing to something bigger than ourselves, 
+ * and giving it everything we’ve got. that’s the world we’re building together - with the team, 
+ * the community, our whole family behind Atlantis World - the world we all deserve.”
  *
  * # Julio Alcantara
  *
@@ -62,11 +69,12 @@ import {IAtlantisWorldFoundingAtlanteanScrolls} from "./interface/IAtlantisWorld
  *
  * # Carlo Miguel Dy
  *
- * “I've been ”
+ * “We're building together for the decentralized future!”
  *
  * # Eylul Civelek
  *
- * “...”
+ * “Atlantis World is such a rare kind of project to work on. I couldn't have asked for a better team to 
+ * be part of. We were born to make history together!”
  *
  *
  * @title Atlantis World Alpha Sale contract, a controller for the entire club sale
