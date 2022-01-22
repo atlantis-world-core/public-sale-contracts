@@ -19,18 +19,14 @@ const networkName =
 
 // WETH address
 const WETH_ADDRESS = polygonMainnetReady
-  ? "0x4f2215ed36ca6b5c0b1dc747bc3cfe8e64f6ef0c" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
+  ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
   : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
 
 const MAGICAL_KEY_TOKEN_URI =
   "bafkreief2sxcsudbhr6dtzaxdjdoryu52nq6pxjuhvov6u7siexob7mqba";
-const START_SALE_TIMESTAMP = polygonMainnetReady
-  ? JAN_22_START_SALE_TIMESTAMP
-  : 1642876963;
+const START_SALE_TIMESTAMP = 1643876963;
 
-const END_SALE_TIMESTAMP = polygonMainnetReady
-  ? JAN_22_END_SALE_TIMESTAMP
-  : 1642877143;
+const END_SALE_TIMESTAMP = 1644877143;
 
 const ADVISORY_WHITELIST_MERKLE_ROOT =
   "0xd446bbf399b8a0f6fa4a4ca69e33eca42e860070f9182eb21a1366841bd8962d";
