@@ -2,6 +2,8 @@ import hre, { ethers, upgrades } from "hardhat";
 import * as dotenv from "dotenv";
 import readline from "readline";
 import {
+  BLOCK_ONE_MINUTE,
+  BLOCK_ONE_MONTH,
   JAN_22_END_SALE_TIMESTAMP,
   JAN_22_START_SALE_TIMESTAMP,
 } from "../utils";
@@ -25,9 +27,13 @@ const WETH_ADDRESS = polygonMainnetReady
 
 const MAGICAL_KEY_TOKEN_URI =
   "bafkreief2sxcsudbhr6dtzaxdjdoryu52nq6pxjuhvov6u7siexob7mqba";
-const START_SALE_TIMESTAMP = 1643876963;
+const START_SALE_TIMESTAMP = isNetworkPolygonMainnet
+  ? 1643876963
+  : Math.ceil(new Date().getTime() / 1000) + BLOCK_ONE_MINUTE;
 
-const END_SALE_TIMESTAMP = 1643876965;
+const END_SALE_TIMESTAMP = isNetworkPolygonMainnet
+  ? 1643876965
+  : Math.ceil(new Date().getTime() / 1000) + BLOCK_ONE_MINUTE * 2;
 
 const ADVISORY_WHITELIST_MERKLE_ROOT =
   "0x56490adf558e6af8c52e1db66ecfb95fa20173154a04576ed98c672aa51aed93";
@@ -52,8 +58,8 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
   const callOverrides: Overrides = {
-    gasPrice: ethers.utils.parseUnits("325", "gwei"),
-    gasLimit: 500_000,
+    // gasPrice: ethers.utils.parseUnits("45", "gwei"),
+    // gasLimit: 3_000_000,
   };
 
   console.log("Deploying contracts 📜...\n");
@@ -147,7 +153,7 @@ async function main() {
     `_WETH: ${WETH_ADDRESS}`,
   ]);
 
-  let nonce = await deployer.getTransactionCount();
+  // let nonce = await deployer.getTransactionCount();
 
   // Sale contract
   const SaleContract = await ethers.getContractFactory(
@@ -162,7 +168,7 @@ async function main() {
     WETH_ADDRESS,
     {
       ...callOverrides,
-      nonce,
+      // nonce,
     }
   );
   console.info(
@@ -180,10 +186,10 @@ async function main() {
   const KeyContract = await ethers.getContractFactory(
     "AtlantisWorldMagicalKeys"
   );
-  nonce = await deployer.getTransactionCount();
+  // nonce = await deployer.getTransactionCount();
   const keyContract = await KeyContract.deploy(saleContract.address, {
     ...callOverrides,
-    nonce,
+    // nonce,
   });
   console.info(
     `\n[KeyContract] transaction hash`,
@@ -195,27 +201,27 @@ async function main() {
     `[KeyContract] 💡 Key contract deployed at address`,
     keyContract.address
   );
-  nonce = await deployer.getTransactionCount();
+  // nonce = await deployer.getTransactionCount();
   await saleContract.setKeysAddress(keyContract.address, {
     ...callOverrides,
-    nonce,
+    // nonce,
   });
-  nonce = await deployer.getTransactionCount();
+  // nonce = await deployer.getTransactionCount();
   await keyContract.setMagicalKeyTokenURI(MAGICAL_KEY_TOKEN_URI, {
     ...callOverrides,
-    nonce,
+    // nonce,
   });
 
   // Scroll proxy contract
   const ScrollProxyContract = await ethers.getContractFactory(
     "AtlantisWorldFoundingAtlanteanScrolls"
   );
-  nonce = await deployer.getTransactionCount();
+  // nonce = await deployer.getTransactionCount();
   const scrollContractImplementation = await ScrollProxyContract.deploy(
     saleContract.address,
     {
       ...callOverrides,
-      nonce,
+      // nonce,
     }
   );
   // const scrollContract = (await upgrades.deployProxy(
@@ -235,12 +241,12 @@ async function main() {
     `[ScrollContract] 💡 Scroll contract imlpementation deployed at address`,
     scrollContractImplementation.address
   );
-  nonce = await deployer.getTransactionCount();
+  // nonce = await deployer.getTransactionCount();
   await saleContract.setScrollAddress(scrollContractImplementation.address, {
     ...callOverrides,
-    nonce,
+    // nonce,
   });
-  nonce = await deployer.getTransactionCount();
+  // nonce = await deployer.getTransactionCount();
   await scrollContractImplementation.setAdvisoryCIDs(
     [
       "bafkreic34stowpa7nyti7rod7kqx7big5yyy7pj2n545dwfhb6ssyqdnfy", // AER
@@ -250,10 +256,10 @@ async function main() {
     ],
     {
       ...callOverrides,
-      nonce,
+      // nonce,
     }
   );
-  nonce = await deployer.getTransactionCount();
+  // nonce = await deployer.getTransactionCount();
   await scrollContractImplementation.setPublicCIDs(
     [
       "bafkreih4arqhfqcliirooxwyhoma2e67mrocbha4zzthmsmhcmc4z7dmc4", // AER
@@ -263,7 +269,7 @@ async function main() {
     ],
     {
       ...callOverrides,
-      nonce,
+      // nonce,
     }
   );
 

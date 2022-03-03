@@ -211,12 +211,12 @@ contract AtlantisWorldAlphaSale is Ownable, Pausable, ReentrancyGuard {
     address _publicVerification,
     IERC20 _WETH
   ) {
-    require(_startSaleBlockTimestamp >= block.timestamp, "Invalid start date");
-    require(
-      _stopSaleBlockTimestamp >= block.timestamp &&
-        _stopSaleBlockTimestamp > _startSaleBlockTimestamp,
-      "Invalid stop date"
-    );
+    // require(_startSaleBlockTimestamp >= block.timestamp, "Invalid start date");
+    // require(
+    //   _stopSaleBlockTimestamp >= block.timestamp &&
+    //     _stopSaleBlockTimestamp > _startSaleBlockTimestamp,
+    //   "Invalid stop date"
+    // );
 
     publicVerificationAddress = _publicVerification;
     whitelistMerkleRoot = _whitelistMerkleRoot;
