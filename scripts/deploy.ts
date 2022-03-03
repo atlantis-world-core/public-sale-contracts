@@ -6,6 +6,7 @@ import {
   JAN_22_START_SALE_TIMESTAMP,
 } from "../utils";
 import { AtlantisWorldFoundingAtlanteanScrolls } from "../typechain";
+import { Overrides } from "ethers";
 
 dotenv.config();
 
@@ -26,13 +27,13 @@ const MAGICAL_KEY_TOKEN_URI =
   "bafkreief2sxcsudbhr6dtzaxdjdoryu52nq6pxjuhvov6u7siexob7mqba";
 const START_SALE_TIMESTAMP = 1643876963;
 
-const END_SALE_TIMESTAMP = 1644877143;
+const END_SALE_TIMESTAMP = 1643876965;
 
 const ADVISORY_WHITELIST_MERKLE_ROOT =
-  "0xd446bbf399b8a0f6fa4a4ca69e33eca42e860070f9182eb21a1366841bd8962d";
+  "0x56490adf558e6af8c52e1db66ecfb95fa20173154a04576ed98c672aa51aed93";
 
 const ALPHA_SALE_WHITELIST_MERKLE_ROOT =
-  "0xc1174e5b307f4ebdf119b4ea78b4bcd8745d7bfa2b175bb5ee261e570a4b796e";
+  "0x1c36f4895958ce3ef3c080ece1855a2436f85d17d46fe18b2aa4d091ea64550f";
 
 async function main() {
   console.log(`✨ Polygon ${networkName} deployment initializing...\n\n\n`);
@@ -50,6 +51,10 @@ async function main() {
   }
 
   const [deployer] = await ethers.getSigners();
+  const callOverrides: Overrides = {
+    gasPrice: ethers.utils.parseUnits("325", "gwei"),
+    gasLimit: 500_000,
+  };
 
   console.log("Deploying contracts 📜...\n");
 
@@ -142,6 +147,8 @@ async function main() {
     `_WETH: ${WETH_ADDRESS}`,
   ]);
 
+  let nonce = await deployer.getTransactionCount();
+
   // Sale contract
   const SaleContract = await ethers.getContractFactory(
     "AtlantisWorldAlphaSale"
@@ -152,7 +159,11 @@ async function main() {
     START_SALE_TIMESTAMP,
     END_SALE_TIMESTAMP,
     publicVerificationAddress,
-    WETH_ADDRESS
+    WETH_ADDRESS,
+    {
+      ...callOverrides,
+      nonce,
+    }
   );
   console.info(
     `\n[SaleContract] transaction hash`,
@@ -169,7 +180,11 @@ async function main() {
   const KeyContract = await ethers.getContractFactory(
     "AtlantisWorldMagicalKeys"
   );
-  const keyContract = await KeyContract.deploy(saleContract.address);
+  nonce = await deployer.getTransactionCount();
+  const keyContract = await KeyContract.deploy(saleContract.address, {
+    ...callOverrides,
+    nonce,
+  });
   console.info(
     `\n[KeyContract] transaction hash`,
     keyContract.deployTransaction.hash
@@ -180,15 +195,28 @@ async function main() {
     `[KeyContract] 💡 Key contract deployed at address`,
     keyContract.address
   );
-  await saleContract.setKeysAddress(keyContract.address);
-  await keyContract.setMagicalKeyTokenURI(MAGICAL_KEY_TOKEN_URI);
+  nonce = await deployer.getTransactionCount();
+  await saleContract.setKeysAddress(keyContract.address, {
+    ...callOverrides,
+    nonce,
+  });
+  nonce = await deployer.getTransactionCount();
+  await keyContract.setMagicalKeyTokenURI(MAGICAL_KEY_TOKEN_URI, {
+    ...callOverrides,
+    nonce,
+  });
 
   // Scroll proxy contract
   const ScrollProxyContract = await ethers.getContractFactory(
     "AtlantisWorldFoundingAtlanteanScrolls"
   );
+  nonce = await deployer.getTransactionCount();
   const scrollContractImplementation = await ScrollProxyContract.deploy(
-    saleContract.address
+    saleContract.address,
+    {
+      ...callOverrides,
+      nonce,
+    }
   );
   // const scrollContract = (await upgrades.deployProxy(
   //   ScrollProxyContract,
@@ -207,19 +235,37 @@ async function main() {
     `[ScrollContract] 💡 Scroll contract imlpementation deployed at address`,
     scrollContractImplementation.address
   );
-  await saleContract.setScrollAddress(scrollContractImplementation.address);
-  await scrollContractImplementation.setAdvisoryCIDs([
-    "bafkreic34stowpa7nyti7rod7kqx7big5yyy7pj2n545dwfhb6ssyqdnfy", // AER
-    "bafkreif5axl5schzc37rbnbm5ncg5jcqnmozwphsam7iesabsxxobnzfni", // AQUA
-    "bafkreih3fgctrvxrj3hpyuyn3qm6jfd2h3royhqxmxlpeev7b3qa3ujnnu", // IGNIS
-    "bafkreigshxytnwu5fpjenzvoy44jvnppjqnhxrb7vinejhhrihpl2vbkca", // TERRA
-  ]);
-  await scrollContractImplementation.setPublicCIDs([
-    "bafkreih4arqhfqcliirooxwyhoma2e67mrocbha4zzthmsmhcmc4z7dmc4", // AER
-    "bafkreifwiomxfhiyvgyefx6p3se3ihxvhdlmbi5jw5eei24fpdx4wehxam", // AQUA
-    "bafkreig7rjwlxusikwfvyz5zhu2ldk2qfhnxnu6xrqmew46jgwv4sqv56y", // IGNIS
-    "bafkreidasah65ts5j3kc7otev7x2fymfvdtwksezjwgmruwujbyqdqlpbe", // TERRA
-  ]);
+  nonce = await deployer.getTransactionCount();
+  await saleContract.setScrollAddress(scrollContractImplementation.address, {
+    ...callOverrides,
+    nonce,
+  });
+  nonce = await deployer.getTransactionCount();
+  await scrollContractImplementation.setAdvisoryCIDs(
+    [
+      "bafkreic34stowpa7nyti7rod7kqx7big5yyy7pj2n545dwfhb6ssyqdnfy", // AER
+      "bafkreif5axl5schzc37rbnbm5ncg5jcqnmozwphsam7iesabsxxobnzfni", // AQUA
+      "bafkreih3fgctrvxrj3hpyuyn3qm6jfd2h3royhqxmxlpeev7b3qa3ujnnu", // IGNIS
+      "bafkreigshxytnwu5fpjenzvoy44jvnppjqnhxrb7vinejhhrihpl2vbkca", // TERRA
+    ],
+    {
+      ...callOverrides,
+      nonce,
+    }
+  );
+  nonce = await deployer.getTransactionCount();
+  await scrollContractImplementation.setPublicCIDs(
+    [
+      "bafkreih4arqhfqcliirooxwyhoma2e67mrocbha4zzthmsmhcmc4z7dmc4", // AER
+      "bafkreifwiomxfhiyvgyefx6p3se3ihxvhdlmbi5jw5eei24fpdx4wehxam", // AQUA
+      "bafkreig7rjwlxusikwfvyz5zhu2ldk2qfhnxnu6xrqmew46jgwv4sqv56y", // IGNIS
+      "bafkreidasah65ts5j3kc7otev7x2fymfvdtwksezjwgmruwujbyqdqlpbe", // TERRA
+    ],
+    {
+      ...callOverrides,
+      nonce,
+    }
+  );
 
   const [saleContractOwner, keyContractOwner, scrollContractOwner] =
     await Promise.all([
