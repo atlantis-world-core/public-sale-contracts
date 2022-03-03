@@ -21,7 +21,7 @@ const networkName =
   polygonMainnetReady || isNetworkPolygonMainnet ? "Mainnet" : "Mumbai Testnet";
 
 // WETH address
-const WETH_ADDRESS = polygonMainnetReady
+const WETH_ADDRESS = isNetworkPolygonMainnet
   ? "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619" // https://polygonscan.com/token/0x7ceb23fd6bc0add59e62ac25578270cff1b9f619
   : "0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1"; // https://mumbai.polygonscan.com/token/0xfe4f5145f6e09952a5ba9e956ed0c25e3fa4c7f1
 
@@ -298,9 +298,9 @@ async function main() {
 
   const network = polygonMainnetReady ? "polygon" : "mumbai";
   const commands = [
-    `npx hardhat verify --network ${network} ${saleContract.address} ${ALPHA_SALE_WHITELIST_MERKLE_ROOT} ${ADVISORY_WHITELIST_MERKLE_ROOT} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${deployer.address} ${WETH_ADDRESS}`,
+    `npx hardhat verify --network ${network} ${saleContract.address} ${ALPHA_SALE_WHITELIST_MERKLE_ROOT} ${ADVISORY_WHITELIST_MERKLE_ROOT} ${START_SALE_TIMESTAMP} ${END_SALE_TIMESTAMP} ${publicVerificationAddress} ${WETH_ADDRESS}`,
     `npx hardhat verify --network ${network} ${keyContract.address} ${saleContract.address}`,
-    `npx hardhat verify --network ${network} ${scrollContractImplementation.address}`,
+    `npx hardhat verify --network ${network} ${scrollContractImplementation.address} ${saleContract.address}`,
   ];
   console.log(
     "\n\n\nVerify the smart contracts with the suggested commands:",
